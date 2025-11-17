@@ -53,20 +53,31 @@ def render():
 
         start_time = st.session_state.start_time
         end_time = st.session_state.get("end_time", datetime.now())
-        elapsed = end_time - start_time
+
+        # Ensure both times are valid before calculating elapsed time
+        if start_time is not None and end_time is not None:
+            elapsed = end_time - start_time
+        else:
+            elapsed = None
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.write(f"**Start:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            if start_time:
+                st.write(f"**Start:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            else:
+                st.write("**Start:** N/A")
         with col2:
-            if st.session_state.get("end_time"):
+            if st.session_state.get("end_time") and end_time:
                 st.write(f"**End:** {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
             else:
                 st.write("**End:** In progress...")
         with col3:
-            minutes = int(elapsed.total_seconds() // 60)
-            seconds = int(elapsed.total_seconds() % 60)
-            st.write(f"**Duration:** {minutes}m {seconds}s")
+            if elapsed:
+                minutes = int(elapsed.total_seconds() // 60)
+                seconds = int(elapsed.total_seconds() % 60)
+                st.write(f"**Duration:** {minutes}m {seconds}s")
+            else:
+                st.write("**Duration:** N/A")
 
     st.markdown("---")
 

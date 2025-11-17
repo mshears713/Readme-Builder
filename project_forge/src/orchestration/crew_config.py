@@ -488,9 +488,46 @@ def create_complete_pipeline(
     if progress_callback:
         progress_callback("PRDWriter", 90, "📄 Generating README/PRD...")
 
+    import logging
+    import signal
+    from contextlib import contextmanager
+
+    logger = logging.getLogger("project_forge")
+
+    @contextmanager
+    def timeout_handler(seconds):
+        """Context manager for timeout handling."""
+        def timeout_signal_handler(signum, frame):
+            raise TimeoutError(f"Task execution exceeded {seconds} seconds")
+
+        # Set the signal handler and alarm
+        old_handler = signal.signal(signal.SIGALRM, timeout_signal_handler)
+        signal.alarm(seconds)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+
     prd_writer = create_prd_writer_agent()
     prd_task = create_prd_writing_task(prd_writer, plan_result.project_plan)
-    prd_result = prd_task.execute()
+
+    try:
+        logger.info("Starting PRD writer task execution...")
+        # Add 10 minute timeout for PRD writer (it can take a while with large plans)
+        with timeout_handler(600):
+            prd_result = prd_task.execute()
+        logger.info("PRD writer task completed successfully")
+    except TimeoutError as e:
+        logger.error(f"PRD writer timed out: {e}")
+        raise TimeoutError(
+            "README generation timed out after 10 minutes. "
+            "This may indicate an issue with the LLM API or the task complexity. "
+            "Try reducing max_iterations or simplifying your project idea."
+        )
+    except Exception as e:
+        logger.error(f"PRD writer failed with error: {e}")
+        raise
 
     # Parse the README content
     readme_content = parse_prd_writing_result(prd_result, plan_result.project_plan)
