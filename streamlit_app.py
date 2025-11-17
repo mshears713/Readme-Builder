@@ -151,7 +151,7 @@ st.sidebar.markdown(
     <div style='text-align: center; color: #666; font-size: 0.8rem;'>
         <p>Project Forge v1.0</p>
         <p>Multi-Agent README Generator</p>
-        <p>Powered by CrewAI & Claude</p>
+        <p>Powered by CrewAI & OpenAI</p>
     </div>
     """,
     unsafe_allow_html=True

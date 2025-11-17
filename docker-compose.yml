@@ -12,7 +12,6 @@ services:
     environment:
       # LLM API Keys - Load from .env file or set directly
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       # Mount output directory for generated READMEs
       - ./output:/app/output
@@ -34,7 +33,6 @@ services:
     working_dir: /app/project_forge
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       # Mount output directory for generated READMEs
       - ./output:/app/output
