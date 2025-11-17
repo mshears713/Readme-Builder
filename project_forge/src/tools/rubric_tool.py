@@ -277,3 +277,79 @@ def evaluate_concept_clarity(concept_text: str) -> RubricScore:
         feedback=feedback,
         pass_threshold=7
     )
+
+
+def evaluate_phase_balance(phases: List[Any]) -> RubricScore:
+    """
+    Evaluate whether phases are well-balanced in terms of steps and work distribution.
+
+    Phase 3 enhancement: checks that phases have appropriate number of steps
+    and aren't too empty or overloaded.
+
+    Args:
+        phases: List of Phase objects from ProjectPlan
+
+    Returns:
+        RubricScore for balance
+
+    Teaching Note:
+        Balance is important for maintaining momentum. Phases that are too
+        small feel trivial, while phases that are too large feel overwhelming.
+        We aim for roughly 8-12 steps per phase for good pacing.
+    """
+    score = 10
+    feedback_points = []
+
+    if not phases:
+        return RubricScore(
+            criterion=RubricCriterion.BALANCE,
+            score=0,
+            feedback="No phases to evaluate",
+            pass_threshold=6
+        )
+
+    # Check total phase count
+    if len(phases) != 5:
+        score -= 3
+        feedback_points.append(f"Expected 5 phases but found {len(phases)}")
+
+    # Check step distribution
+    step_counts = [len(phase.steps) for phase in phases]
+    total_steps = sum(step_counts)
+    avg_steps = total_steps / len(phases) if phases else 0
+
+    # Check for empty or nearly empty phases
+    empty_phases = [i + 1 for i, count in enumerate(step_counts) if count < 3]
+    if empty_phases:
+        score -= 2
+        feedback_points.append(f"Phases {empty_phases} have too few steps (< 3)")
+
+    # Check for overloaded phases
+    overloaded_phases = [i + 1 for i, count in enumerate(step_counts) if count > 15]
+    if overloaded_phases:
+        score -= 2
+        feedback_points.append(f"Phases {overloaded_phases} are overloaded (> 15 steps)")
+
+    # Check variance (phases should be roughly similar in size)
+    if step_counts:
+        variance = sum((count - avg_steps) ** 2 for count in step_counts) / len(step_counts)
+        if variance > 16:  # Standard deviation > 4
+            score -= 1
+            feedback_points.append(f"Uneven step distribution (counts: {step_counts})")
+
+    # Check total step count
+    if total_steps < 40:
+        score -= 1
+        feedback_points.append(f"Only {total_steps} total steps - plan may be underscoped")
+    elif total_steps > 60:
+        score -= 1
+        feedback_points.append(f"{total_steps} total steps - plan may be overscoped")
+
+    feedback = " | ".join(feedback_points) if feedback_points else f"Well-balanced: {len(phases)} phases with {total_steps} steps (avg {avg_steps:.1f} per phase)"
+
+    return RubricScore(
+        criterion=RubricCriterion.BALANCE,
+        score=max(0, score),
+        feedback=feedback,
+        pass_threshold=6
+    )
