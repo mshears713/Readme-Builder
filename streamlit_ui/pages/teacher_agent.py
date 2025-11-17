@@ -10,32 +10,32 @@ import streamlit as st
 def render():
     """Render the Teacher Agent page."""
     st.title("👨‍🏫 Teacher Agent")
-    st.markdown("Enriches implementation steps with pedagogical annotations")
+    st.markdown("Guides implementing agents to build educational features into programs")
 
     st.markdown("---")
 
     # Agent description
     with st.expander("ℹ️ About This Agent", expanded=False):
         st.markdown("""
-        **Purpose:** Adds educational value by annotating each step with learning explanations.
+        **Purpose:** Instructs implementing AI agents on what educational features to build into the program.
 
         **What it does:**
         - Reviews each implementation step from PhaseDesigner
-        - Adds "what you learn" annotations explaining concepts
-        - Provides pedagogical context for why each step matters
-        - Ensures explanations match the user's skill level
-        - Creates a learning arc through the project
+        - Adds "teaching guidance" specifying educational features to include
+        - Instructs the agent to build tooltips, documentation, examples, and interactive demos
+        - Ensures the final program helps users learn through interaction
+        - Creates a program that teaches its users
 
         **Input:**
         - List of `Phase` objects from PhaseDesigner
-        - Skill level configuration
+        - Target user skill level for the final program
 
         **Output:**
         - Enriched `Phase` objects where each `Step` now has:
-            - `what_you_learn`: Explanation of concepts learned in this step
-            - Enhanced descriptions with learning context
+            - `teaching_guidance`: Instructions for what educational elements to build
+            - Guidance on tooltips, examples, help sections, etc.
 
-        **Model:** Uses LLM with teaching expertise and educational scaffolding
+        **Model:** Uses LLM with educational product design expertise
         """)
 
     st.markdown("---")
@@ -52,8 +52,8 @@ def render():
     with col2:
         if st.session_state.get("phases"):
             all_steps = [s for p in st.session_state.phases for s in p.steps]
-            annotated = [s for s in all_steps if s.what_you_learn]
-            st.metric("Steps Annotated", len(annotated))
+            annotated = [s for s in all_steps if s.teaching_guidance]
+            st.metric("Steps with Guidance", len(annotated))
     with col3:
         if st.session_state.get("agent_logs", {}).get("TeacherAgent"):
             log_count = len(st.session_state.agent_logs["TeacherAgent"])
@@ -93,61 +93,61 @@ def render():
         **Processing Steps:**
 
         1. **Review Step Descriptions**: Analyzes what each step accomplishes technically
-        2. **Identify Learning Opportunities**: Determines what concepts are taught
-        3. **Write Pedagogical Annotations**: Creates "what you learn" explanations
-        4. **Match Skill Level**: Adjusts explanation depth to user experience
-        5. **Create Learning Arc**: Ensures concepts build on each other
-        6. **Add Context**: Explains why each step matters in the bigger picture
-        7. **Validate Clarity**: Ensures explanations are clear and helpful
+        2. **Identify Educational Opportunities**: Determines what features could help users learn
+        3. **Design Educational Features**: Specifies tooltips, examples, docs, demos to build
+        4. **Match Target Audience**: Adjusts features to user skill level
+        5. **Create Coherent Experience**: Ensures educational features work together
+        6. **Specify Concrete Elements**: Provides clear instructions on what to build
+        7. **Validate Practicality**: Ensures guidance is actionable for implementing agent
         """)
 
         if st.session_state.get("phases"):
-            st.write("**Teaching Strategy:**")
+            st.write("**Educational Strategy:**")
 
             st.info("""
-            The agent approaches teaching through:
-            - **Concept Introduction**: New ideas are explained when first encountered
-            - **Progressive Complexity**: Simple concepts before advanced ones
-            - **Practical Context**: Theory tied to specific implementation
-            - **Skill Building**: Each step reinforces previous learning
+            The agent instructs the implementing agent to:
+            - **Add Interactive Elements**: Tooltips, hover hints, guided tours
+            - **Include Examples**: Code samples, demos, use case scenarios
+            - **Build Documentation**: Inline help, README sections, contextual guidance
+            - **Create Learning Paths**: Progressive disclosure, tutorials, walkthroughs
             """)
 
-            # Show sample learning progression
+            # Show sample guidance
             phases = st.session_state.phases
-            all_steps = [s for p in phases for s in p.steps if s.what_you_learn]
+            all_steps = [s for p in phases for s in p.steps if s.teaching_guidance]
 
             if all_steps:
-                st.write("**Sample Learning Progression:**")
+                st.write("**Sample Educational Guidance:**")
                 sample_steps = all_steps[:3]  # Show first 3 as examples
 
                 for step in sample_steps:
                     with st.expander(f"Step {step.index}: {step.title}"):
                         st.write(f"**Task:** {step.description}")
-                        st.success(f"**📚 What You Learn:** {step.what_you_learn}")
+                        st.success(f"**🎓 Educational Features to Build:** {step.teaching_guidance}")
 
     with tab3:
         st.subheader("Agent Output")
 
-        # Display enriched phases with teaching annotations
+        # Display enriched phases with teaching guidance
         if st.session_state.get("phases"):
             phases = st.session_state.phases
 
-            st.write("**Enriched Project Plan with Learning Annotations:**")
+            st.write("**Enriched Project Plan with Educational Feature Guidance:**")
 
             # Show statistics
             all_steps = [s for p in phases for s in p.steps]
-            annotated_steps = [s for s in all_steps if s.what_you_learn]
+            guided_steps = [s for s in all_steps if s.teaching_guidance]
 
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("Total Steps", len(all_steps))
             with col2:
-                st.metric("Annotated", len(annotated_steps))
+                st.metric("With Guidance", len(guided_steps))
             with col3:
-                coverage = (len(annotated_steps) / max(len(all_steps), 1)) * 100
+                coverage = (len(guided_steps) / max(len(all_steps), 1)) * 100
                 st.metric("Coverage", f"{coverage:.0f}%")
 
-            # Display each phase with emphasis on learning
+            # Display each phase with emphasis on educational features
             for phase in phases:
                 with st.expander(
                     f"**Phase {phase.index}: {phase.name}** ({len(phase.steps)} steps)",
@@ -160,10 +160,10 @@ def render():
                         st.write(f"**Step {step.index}: {step.title}**")
                         st.write(step.description)
 
-                        if step.what_you_learn:
-                            st.success(f"📚 **What You Learn:** {step.what_you_learn}")
+                        if step.teaching_guidance:
+                            st.success(f"🎓 **Educational Features to Build:** {step.teaching_guidance}")
                         else:
-                            st.warning("No learning annotation for this step")
+                            st.warning("No teaching guidance for this step")
 
                         if step.dependencies:
                             deps = ", ".join(str(d) for d in step.dependencies)
@@ -171,15 +171,15 @@ def render():
 
                         st.markdown("---")
 
-            # Show learning themes
+            # Show educational strategy
             st.markdown("---")
-            st.write("**Educational Value:**")
+            st.write("**Educational Strategy:**")
             st.info("""
-            Every step now includes pedagogical context that:
-            - Explains what concepts are being learned
-            - Connects implementation to theory
-            - Builds a progressive learning experience
-            - Helps learners understand the "why" behind each task
+            Every step now includes guidance for the implementing agent on:
+            - What educational features to build (tooltips, examples, docs)
+            - How to make the program teach its users
+            - What interactive elements to include
+            - How to create a learning experience through the UI
             """)
         else:
             st.warning("No output data available")

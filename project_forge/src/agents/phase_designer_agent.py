@@ -247,7 +247,7 @@ def parse_phase_design_result(result: str) -> List[Phase]:
                     index=global_step_index,
                     title=step_data.get("title", f"Step {global_step_index}"),
                     description=step_data.get("description", ""),
-                    what_you_learn="",  # Will be filled by TeacherAgent
+                    teaching_guidance="",  # Educational feature instructions from TeacherAgent
                     dependencies=step_data.get("dependencies", [])
                 )
                 steps.append(step)

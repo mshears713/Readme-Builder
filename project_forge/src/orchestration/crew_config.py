@@ -76,7 +76,7 @@ class FullPlanResult:
     """
     Result from the complete planning+teaching crew (Phase 3).
 
-    Contains the full ProjectPlan with phases, steps, teaching annotations,
+    Contains the full ProjectPlan with phases, steps, educational feature guidance,
     and evaluation results.
 
     Attributes:
@@ -284,7 +284,7 @@ def create_full_plan_crew(
     This crew executes all agents from Phase 2 plus the new Phase 3 agents:
     1-3. ConceptExpander, GoalsAnalyzer, FrameworkSelector (Phase 2)
     4. PhaseDesigner: creates 5 phases with ~50 steps
-    5. TeacherAgent: enriches steps with teaching annotations
+    5. TeacherAgent: adds educational feature guidance to steps
     6. EvaluatorAgent: validates plan quality and structure
 
     The evaluation loop allows for iterative refinement if the initial
@@ -353,11 +353,11 @@ def create_full_plan_crew(
             progress_callback("TeacherAgent", 70, "✅ PhaseDesigner completed")
 
         # STEP 5: Teaching Enrichment
-        # Add "what you'll learn" to each step
-        print("STEP 5: Adding teaching annotations to steps...")
+        # Add educational feature guidance to each step
+        print("STEP 5: Adding educational feature guidance to steps...")
 
         if progress_callback:
-            progress_callback("TeacherAgent", 70, "👨‍🏫 Adding teaching annotations...")
+            progress_callback("TeacherAgent", 70, "👨‍🏫 Adding educational guidance...")
 
         teacher = create_teacher_agent()
         teaching_task = create_teaching_enrichment_task(
@@ -374,13 +374,13 @@ def create_full_plan_crew(
             phases
         )
 
-        # Count steps with teaching notes
-        steps_with_teaching = sum(
+        # Count steps with teaching guidance
+        steps_with_guidance = sum(
             1 for phase in enriched_phases
             for step in phase.steps
-            if step.what_you_learn and len(step.what_you_learn.strip()) > 10
+            if step.teaching_guidance and len(step.teaching_guidance.strip()) > 10
         )
-        print(f"✓ Added teaching annotations to {steps_with_teaching}/{total_steps} steps\n")
+        print(f"✓ Added educational guidance to {steps_with_guidance}/{total_steps} steps\n")
 
         # Create ProjectPlan
         project_plan = ProjectPlan(

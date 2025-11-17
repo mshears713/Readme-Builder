@@ -131,8 +131,8 @@ def create_prd_writing_task(agent: Agent, project_plan: ProjectPlan) -> Task:
         for step in phase.steps:
             phase_info += f"  {step.index}. {step.title}\n"
             phase_info += f"      Description: {step.description}\n"
-            if step.what_you_learn:
-                phase_info += f"      What You'll Learn: {step.what_you_learn}\n"
+            if step.teaching_guidance:
+                phase_info += f"      Teaching Guidance: {step.teaching_guidance}\n"
             if step.dependencies:
                 phase_info += f"      Dependencies: Steps {', '.join(map(str, step.dependencies))}\n"
         phases_summary.append(phase_info)
@@ -230,8 +230,9 @@ document using the following structure:
 **Description:**
 [Detailed step description]
 
-**What You'll Learn:**
-[Teaching annotation - the what_you_learn field]
+**Educational Features to Include:**
+[Teaching guidance - instructions for what educational elements to build into this step
+Examples: tooltips, inline documentation, interactive demos, help sections, example code]
 
 **Dependencies:** [List prerequisite steps if any]
 
@@ -439,8 +440,8 @@ def _format_phase_section(phase: Phase) -> str:
         lines.append("")
         lines.append(f"**Description:** {step.description}")
         lines.append("")
-        if step.what_you_learn:
-            lines.append(f"**What You'll Learn:** {step.what_you_learn}")
+        if step.teaching_guidance:
+            lines.append(f"**Educational Features to Include:** {step.teaching_guidance}")
             lines.append("")
         if step.dependencies:
             dep_str = ', '.join(f"Step {d}" for d in step.dependencies)

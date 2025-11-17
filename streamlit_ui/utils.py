@@ -280,8 +280,8 @@ def display_phases(phases):
                 st.write(f"**Step {step.index}: {step.title}**")
                 st.write(step.description)
 
-                if step.what_you_learn:
-                    st.info(f"📚 **What You Learn:** {step.what_you_learn}")
+                if step.teaching_guidance:
+                    st.info(f"🎓 **Educational Features to Build:** {step.teaching_guidance}")
 
                 if step.dependencies:
                     deps = ", ".join(str(d) for d in step.dependencies)

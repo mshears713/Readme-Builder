@@ -416,21 +416,21 @@ def evaluate_teaching_clarity(plan: Any, skill_level: str = "intermediate") -> R
     score = 10
     feedback_points = []
 
-    # Check for learning annotations in steps
+    # Check for educational guidance in steps
     total_steps = sum(len(phase.steps) for phase in plan.phases)
-    steps_with_learning = sum(
+    steps_with_guidance = sum(
         1 for phase in plan.phases for step in phase.steps
-        if hasattr(step, 'what_you_learn') and step.what_you_learn and len(step.what_you_learn.strip()) > 20
+        if hasattr(step, 'teaching_guidance') and step.teaching_guidance and len(step.teaching_guidance.strip()) > 20
     )
 
-    learning_coverage = (steps_with_learning / total_steps * 100) if total_steps > 0 else 0
+    guidance_coverage = (steps_with_guidance / total_steps * 100) if total_steps > 0 else 0
 
-    if learning_coverage < 50:
+    if guidance_coverage < 50:
         score -= 3
-        feedback_points.append(f"Only {learning_coverage:.0f}% of steps have learning annotations - aim for 80%+")
-    elif learning_coverage < 80:
+        feedback_points.append(f"Only {guidance_coverage:.0f}% of steps have educational guidance - aim for 80%+")
+    elif guidance_coverage < 80:
         score -= 1
-        feedback_points.append(f"{learning_coverage:.0f}% of steps have learning annotations - good but could be higher")
+        feedback_points.append(f"{guidance_coverage:.0f}% of steps have educational guidance - good but could be higher")
 
     # Check global teaching notes
     teaching_notes_length = len(plan.teaching_notes) if hasattr(plan, 'teaching_notes') else 0

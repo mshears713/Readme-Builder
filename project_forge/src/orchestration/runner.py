@@ -324,12 +324,12 @@ def main():
             total_steps = sum(len(p.steps) for p in plan.phases)
             print(f"  Total: {len(plan.phases)} phases, {total_steps} steps")
             print()
-            print("TEACHING ENRICHMENT:")
-            steps_with_teaching = sum(
+            print("EDUCATIONAL GUIDANCE:")
+            steps_with_guidance = sum(
                 1 for p in plan.phases for s in p.steps
-                if s.what_you_learn and len(s.what_you_learn.strip()) > 10
+                if s.teaching_guidance and len(s.teaching_guidance.strip()) > 10
             )
-            print(f"  {steps_with_teaching}/{total_steps} steps have learning annotations")
+            print(f"  {steps_with_guidance}/{total_steps} steps have educational guidance")
             print(f"  Global notes: {len(plan.teaching_notes)} characters")
             print()
             print("EVALUATION:")
