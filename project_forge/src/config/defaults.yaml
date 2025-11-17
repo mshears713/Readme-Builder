@@ -48,7 +48,35 @@ project_defaults:
   steps_per_phase: 10
   default_skill_level: "intermediate"
   default_complexity: "medium"
+  default_project_type: "medium"
   default_time_constraint: "1-2 weeks"
+
+# Project Type Presets
+# These guide PhaseDesigner and EvaluatorAgent on appropriate project scope
+project_types:
+  toy:
+    description: "Quick weekend project, minimal complexity"
+    recommended_phases: 3
+    recommended_steps: 20-30
+    max_time_weeks: 1
+    focus: "Learning one key concept through rapid iteration"
+    avoid: ["Production deployment", "Complex architecture", "Multiple integrations"]
+
+  medium:
+    description: "Solid 1-2 week project with meaningful depth"
+    recommended_phases: 5
+    recommended_steps: 40-50
+    max_time_weeks: 2
+    focus: "Building complete feature set with best practices"
+    avoid: ["Over-engineering", "Scope creep", "Unnecessary complexity"]
+
+  ambitious:
+    description: "Multi-week challenge with production-grade features"
+    recommended_phases: 5-7
+    recommended_steps: 50-70
+    max_time_weeks: 4
+    focus: "Production-quality system with advanced features and deployment"
+    avoid: ["Endless feature additions", "Analysis paralysis"]
 
 # Framework Templates
 # Common tech stack combinations that work well together

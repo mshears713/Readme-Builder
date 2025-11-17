@@ -72,6 +72,14 @@ Examples:
     )
 
     parser.add_argument(
+        "--project-type",
+        type=str,
+        choices=["toy", "medium", "ambitious"],
+        default="medium",
+        help="Project scope: toy (quick weekend project), medium (1-2 weeks), ambitious (multi-week challenge)"
+    )
+
+    parser.add_argument(
         "--output-dir",
         type=str,
         default="output",
@@ -217,6 +225,7 @@ def main():
     print(f"Configuration:")
     print(f"  Skill Level:  {args.skill}")
     print(f"  Complexity:   {args.complexity}")
+    print(f"  Project Type: {args.project_type}")
     print(f"  Time Frame:   {args.time}")
     print(f"  Verbose:      {args.verbose}")
     print(f"  Log Level:    {args.log_level}")

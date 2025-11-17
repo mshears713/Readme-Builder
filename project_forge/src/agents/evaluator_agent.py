@@ -35,7 +35,10 @@ from ..tools.rubric_tool import (
     RubricScore,
     RubricCriterion,
     evaluate_concept_clarity,
-    evaluate_phase_balance
+    evaluate_phase_balance,
+    evaluate_teaching_clarity,
+    evaluate_technical_depth,
+    evaluate_feasibility_for_project_type
 )
 from ..tools.consistency_tool import validate_project_plan, ConsistencyReport
 
@@ -119,7 +122,9 @@ def create_evaluator_agent() -> Agent:
 
 def evaluate_plan_quality(
     plan: ProjectPlan,
-    skill_level: str = "intermediate"
+    skill_level: str = "intermediate",
+    project_type: str = "medium",
+    time_constraint: str = "1-2 weeks"
 ) -> EvaluationResult:
     """
     Evaluate a complete ProjectPlan using heuristic checks.
@@ -128,18 +133,24 @@ def evaluate_plan_quality(
     consistency checks. It's faster and more deterministic than LLM-based
     evaluation.
 
+    Enhanced in Phase 5 to:
+    - Reject plans that are too big for the time constraint
+    - Reject plans that are too trivial for the skill level
+    - Use comprehensive rubric evaluations (teaching, technical depth, feasibility)
+
     Args:
         plan: Complete ProjectPlan with phases, steps, and teaching notes
         skill_level: User's skill level for context
+        project_type: Project type ("toy", "medium", "ambitious")
+        time_constraint: Time available (e.g., "1 week", "1-2 weeks")
 
     Returns:
         EvaluationResult with scores, feedback, and approval decision
 
     Teaching Note:
         Heuristic evaluation is good for structural and quantitative checks.
-        For more nuanced quality assessment (like evaluating teaching quality),
-        you'd use an LLM-based evaluation task. We keep it simple here for
-        Phase 3 but could enhance in Phase 5.
+        Phase 5 enhancement adds sophisticated scope validation to prevent
+        users from attempting projects that are too ambitious or too trivial.
     """
     scores = {}
     critical_issues = []
@@ -177,18 +188,53 @@ def evaluate_plan_quality(
     elif balance_score.score < 8:
         suggestions.append(f"Balance could be improved: {balance_score.feedback}")
 
-    # Check teaching enrichment
-    steps_with_teaching = sum(
-        1 for phase in plan.phases
-        for step in phase.steps
-        if step.what_you_learn and len(step.what_you_learn.strip()) > 10
-    )
+    # Phase 5 Enhancement: Evaluate teaching clarity comprehensively
+    teaching_score = evaluate_teaching_clarity(plan, skill_level)
+    scores[RubricCriterion.TEACHING_VALUE] = teaching_score
+
+    if not teaching_score.passes():
+        critical_issues.append(f"Teaching clarity issues: {teaching_score.feedback}")
+    elif teaching_score.score < 8:
+        suggestions.append(f"Teaching clarity: {teaching_score.feedback}")
+
+    # Phase 5 Enhancement: Evaluate technical depth
+    technical_depth_score = evaluate_technical_depth(plan, skill_level)
+    scores[RubricCriterion.TECHNICAL_DEPTH] = technical_depth_score
+
+    if not technical_depth_score.passes():
+        critical_issues.append(f"Technical depth issues: {technical_depth_score.feedback}")
+    elif technical_depth_score.score < 7:
+        suggestions.append(f"Technical depth: {technical_depth_score.feedback}")
+
+    # Phase 5 Enhancement: Evaluate feasibility for project type and time constraint
+    feasibility_score = evaluate_feasibility_for_project_type(plan, project_type, time_constraint)
+    scores[RubricCriterion.FEASIBILITY] = feasibility_score
+
+    if not feasibility_score.passes():
+        critical_issues.append(f"SCOPE MISMATCH: {feasibility_score.feedback}")
+    elif feasibility_score.score < 7:
+        suggestions.append(f"Feasibility concern: {feasibility_score.feedback}")
+
+    # Additional Phase 5 checks for trivial or overambitious plans
     total_steps = sum(len(phase.steps) for phase in plan.phases)
 
-    if steps_with_teaching < total_steps * 0.8:  # At least 80% of steps should have teaching notes
+    # Reject plans that are too trivial
+    if total_steps < 20:
         critical_issues.append(
-            f"Teaching enrichment incomplete: only {steps_with_teaching}/{total_steps} steps have learning annotations"
+            f"Plan is too trivial: Only {total_steps} steps. Even 'toy' projects should have 20-30 steps to provide meaningful learning."
         )
+
+    # Reject plans that are clearly overambitious
+    if time_constraint.startswith("1 week") or time_constraint == "1 week":
+        if total_steps > 40:
+            critical_issues.append(
+                f"Plan is too ambitious for 1 week: {total_steps} steps. Reduce scope or extend timeline to 1-2 weeks."
+            )
+    elif "1-2 week" in time_constraint or "2 week" in time_constraint:
+        if total_steps > 60:
+            critical_issues.append(
+                f"Plan is too ambitious for 2 weeks: {total_steps} steps. Reduce scope or set project_type to 'ambitious' with 3-4 weeks."
+            )
 
     # Check global teaching notes
     if not plan.teaching_notes or len(plan.teaching_notes.strip()) < 50:
@@ -199,26 +245,35 @@ def evaluate_plan_quality(
 
     # Generate feedback summary
     if approved:
-        feedback = f"""Plan approved!
+        feedback = f"""Plan approved! ✓
 
 Scores:
 - Clarity: {scores[RubricCriterion.CLARITY].score}/10
+- Feasibility: {scores[RubricCriterion.FEASIBILITY].score}/10
+- Teaching Value: {scores[RubricCriterion.TEACHING_VALUE].score}/10
+- Technical Depth: {scores[RubricCriterion.TECHNICAL_DEPTH].score}/10
 - Balance: {scores[RubricCriterion.BALANCE].score}/10
 
 Structure: {total_steps} steps across {len(plan.phases)} phases
-Teaching: {steps_with_teaching}/{total_steps} steps have learning annotations
+Project Type: {project_type} ({time_constraint})
 """
         if suggestions:
             feedback += "\nOptional improvements:\n" + "\n".join(f"- {s}" for s in suggestions)
     else:
-        feedback = f"""Plan needs revision.
+        feedback = f"""Plan needs revision. ✗
 
 Critical issues to fix:
 {chr(10).join(f'- {issue}' for issue in critical_issues)}
 
 Current scores:
 - Clarity: {scores[RubricCriterion.CLARITY].score}/10
+- Feasibility: {scores[RubricCriterion.FEASIBILITY].score}/10
+- Teaching Value: {scores[RubricCriterion.TEACHING_VALUE].score}/10
+- Technical Depth: {scores[RubricCriterion.TECHNICAL_DEPTH].score}/10
 - Balance: {scores[RubricCriterion.BALANCE].score}/10
+
+Structure: {total_steps} steps across {len(plan.phases)} phases
+Project Type: {project_type} ({time_constraint})
 """
 
     return EvaluationResult(
@@ -334,6 +389,8 @@ Be specific and constructive. Identify real problems, not nitpicks.
 def evaluate_project_plan(
     plan: ProjectPlan,
     skill_level: str = "intermediate",
+    project_type: str = "medium",
+    time_constraint: str = "1-2 weeks",
     use_llm: bool = False
 ) -> EvaluationResult:
     """
@@ -342,9 +399,14 @@ def evaluate_project_plan(
     Combines heuristic and optionally LLM-based evaluation for comprehensive
     quality assessment.
 
+    Phase 5 Enhancement: Now considers project_type and time_constraint to
+    reject plans that are too ambitious or too trivial for the user's goals.
+
     Args:
         plan: Complete ProjectPlan to evaluate
         skill_level: User's skill level
+        project_type: Project type ("toy", "medium", "ambitious")
+        time_constraint: Time available (e.g., "1 week", "1-2 weeks")
         use_llm: Whether to use LLM-based evaluation (slower but more nuanced)
 
     Returns:
@@ -355,20 +417,23 @@ def evaluate_project_plan(
         heuristic checks, then optionally use LLM for nuanced assessment.
         This two-tier approach balances speed and quality.
 
+        Phase 5 adds sophisticated scope validation to ensure projects are
+        "just right" - not too big to finish, not too small to learn from.
+
     Usage:
-        >>> result = evaluate_project_plan(plan, "intermediate")
+        >>> result = evaluate_project_plan(plan, "intermediate", "medium", "1-2 weeks")
         >>> if result.approved:
         >>>     print("Plan approved!")
         >>> else:
         >>>     print(f"Issues: {result.critical_issues}")
     """
-    # Always run heuristic evaluation
-    result = evaluate_plan_quality(plan, skill_level)
+    # Always run heuristic evaluation with Phase 5 enhancements
+    result = evaluate_plan_quality(plan, skill_level, project_type, time_constraint)
 
     # Optionally add LLM-based evaluation
     if use_llm and not result.approved:
-        # Could implement LLM evaluation here in Phase 5
-        # For Phase 3, we rely on heuristics only
+        # Could implement LLM evaluation here for even more nuanced assessment
+        # For Phase 5, the enhanced heuristics are sufficient
         pass
 
     return result
