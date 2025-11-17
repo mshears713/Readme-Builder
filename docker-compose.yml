@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Streamlit Web UI Service
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: project-forge-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      # LLM API Keys - Load from .env file or set directly
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      # Mount output directory for generated READMEs
+      - ./output:/app/output
+      # Mount config directory (optional - for custom configurations)
+      - ./project_forge/src/config:/app/project_forge/src/config
+      # Mount examples directory (optional - for viewing examples)
+      - ./project_forge/examples:/app/project_forge/examples
+    command: streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true
+    restart: unless-stopped
+    networks:
+      - project-forge-network
+
+  # CLI Service (for batch processing)
+  cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: project-forge-cli
+    working_dir: /app/project_forge
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      # Mount output directory for generated READMEs
+      - ./output:/app/output
+      # Mount input directory for batch processing
+      - ./input:/app/input
+      # Mount config directory
+      - ./project_forge/src/config:/app/project_forge/src/config
+    # Override the default command - this service is for on-demand CLI usage
+    # Use: docker-compose run --rm cli "Your project idea"
+    entrypoint: ["python", "-m", "src.orchestration.runner"]
+    profiles:
+      - cli
+    networks:
+      - project-forge-network
+
+networks:
+  project-forge-network:
+    driver: bridge
