@@ -1,31 +1,31 @@
 """
-TeacherAgent - Adds pedagogical annotations to project plans.
+TeacherAgent - Adds educational feature guidance to project plans.
 
 This agent takes the structured phase/step plan from PhaseDesignerAgent and
-enriches it with teaching commentary. It adds "what you'll learn" fields to
-each step and creates a global teaching narrative that explains the overall
-learning arc of the project.
+enriches it with instructions for building educational features. It adds
+"teaching_guidance" fields to each step that tell the implementing AI agent
+what educational elements to incorporate into the UI and documentation.
 
 Key responsibilities:
-- Add "what_you_learn" annotations to each step
-- Explain the concepts, patterns, and skills each step teaches
-- Create a cohesive learning narrative across all phases
-- Ensure progressive skill building from phase to phase
-- Make the pedagogical value explicit and clear
+- Add "teaching_guidance" instructions to each step
+- Specify what educational features should be built into the program
+- Guide the agent to include tooltips, examples, documentation, and tutorials
+- Ensure the final program helps users learn as they use it
+- Make the program itself a teaching tool
 
-The output is an enriched ProjectPlan where every step includes learning
-objectives and the overall plan has teaching notes about the learning journey.
+The output is an enriched ProjectPlan where every step includes instructions
+for what educational features the implementing agent should build.
 
 Teaching Note:
-    This agent embodies the "meta" nature of Project Forge. We're not just
-    generating build plans - we're creating teaching documents that help
-    developers learn while they build.
+    This agent embodies the "meta" nature of Project Forge. We're not teaching
+    the USER how to code - we're instructing the AGENT what educational features
+    to build INTO the program so the program itself becomes a learning tool.
 
-    Good teaching annotations:
-    - Explain WHY, not just WHAT
-    - Connect to broader concepts and patterns
-    - Point out learning moments and teaching opportunities
-    - Progressive complexity that builds confidence
+    Good teaching guidance:
+    - Specifies concrete educational features to build (tooltips, examples, docs)
+    - Focuses on making the program teach its users
+    - Instructs the agent what to include, not what the user should learn
+    - Creates a program that guides users as they interact with it
 """
 
 from crewai import Agent, Task
@@ -37,57 +37,58 @@ from ..models.project_models import ProjectIdea, ProjectGoals, Phase, Step, Proj
 
 def create_teacher_agent() -> Agent:
     """
-    Create the TeacherAgent with specialized focus on pedagogy and learning design.
+    Create the TeacherAgent that instructs AI agents on educational features to build.
 
-    This agent understands learning theory, progressive skill building, and how
-    to make technical concepts accessible. It knows how to write teaching
-    annotations that are concise but insightful.
+    This agent understands how to make software educational and guides the
+    implementing AI agent to build features that help users learn. It focuses
+    on specifying concrete educational elements to include in the program.
 
     Returns:
-        CrewAI Agent configured for teaching enrichment
+        CrewAI Agent configured for educational feature guidance
 
     Teaching Note:
-        The backstory emphasizes pedagogical expertise and the ability to
-        explain complex concepts clearly. We want this agent to write
-        annotations that feel like having a knowledgeable mentor explaining
-        things as you work.
+        This agent writes instructions for the IMPLEMENTING AGENT, not lessons
+        for the user. It tells the agent what tooltips, examples, documentation,
+        and interactive features to build into the program.
     """
     return Agent(
-        role="Technical Educator and Learning Designer",
-        goal="Enrich project plans with clear, insightful teaching annotations that make learning explicit",
-        backstory="""You are an expert technical educator with deep knowledge of
-        software development pedagogy and learning design.
+        role="Educational Product Designer and Learning Experience Architect",
+        goal="Guide AI agents to build programs with rich educational features that help users learn through interaction",
+        backstory="""You are an expert at designing educational software and
+        interactive learning experiences. You specialize in instructing AI agents
+        on what educational features to build into programs.
 
         Your expertise includes:
-        - Learning theory and progressive skill building
-        - Making complex technical concepts accessible
-        - Writing clear, concise explanations that stick
-        - Identifying the "teachable moments" in each step
-        - Creating coherent learning arcs across projects
-        - Explaining not just WHAT to build but WHY and HOW it works
+        - Designing intuitive UI elements that guide users (tooltips, hints, examples)
+        - Creating inline documentation that teaches concepts in context
+        - Building interactive tutorials and guided walkthroughs
+        - Incorporating progressive disclosure of complexity
+        - Making programs self-documenting and discoverable
+        - Designing help systems and contextual assistance
 
-        Your teaching philosophy:
-        - Every step is a learning opportunity
-        - Concepts should build on each other naturally
-        - Explain the "why" behind technical decisions
-        - Connect individual steps to broader patterns and principles
-        - Make learning visible and explicit
-        - Appropriate challenge leads to growth
+        Your design philosophy:
+        - Programs should teach users how to use them
+        - Learning happens through interaction and exploration
+        - Good UI design includes educational scaffolding
+        - Documentation should be embedded where users need it
+        - Examples and demonstrations are more effective than pure text
+        - The program itself is the teaching tool
 
-        You write annotations that:
-        - Are 1-3 sentences (concise but insightful)
-        - Focus on concepts, patterns, and transferable skills
-        - Avoid jargon without explanation
-        - Point out connections between steps
-        - Celebrate learning milestones
-        - Match the learner's skill level
+        You write instructions that tell the implementing agent to:
+        - Add tooltips explaining features and concepts when users hover
+        - Include inline code comments that explain patterns and decisions
+        - Create example/demo sections showing how things work
+        - Build help sections with clear explanations and examples
+        - Add interactive elements that demonstrate concepts
+        - Include "Learn More" links to deeper explanations
+        - Create guided tutorials or walkthroughs for first-time users
+        - Display hints and tips at appropriate moments
 
         You DO NOT:
-        - Write generic platitudes ("you'll learn a lot!")
-        - Focus only on syntax or tool usage
-        - Overwhelm with too much detail
-        - Skip the "why" behind technical choices
-        - Assume knowledge without building it progressively""",
+        - Write lessons teaching the user how to code
+        - Explain programming concepts to the user directly
+        - Focus on theory rather than practical UI features
+        - Write generic suggestions without specific implementation details""",
         allow_delegation=False,
         verbose=True
     )
@@ -128,12 +129,12 @@ def create_teaching_enrichment_task(
         )
 
     description = f"""
-Add teaching annotations to this project plan.
+Add educational feature guidance to this project plan.
 
-LEARNING GOALS:
+LEARNING GOALS (what users should learn from using the program):
 {chr(10).join(f'- {goal}' for goal in goals.learning_goals)}
 
-TECHNICAL GOALS:
+TECHNICAL GOALS (what the program does):
 {chr(10).join(f'- {goal}' for goal in goals.technical_goals)}
 
 USER SKILL LEVEL: {skill_level}
@@ -142,35 +143,38 @@ CURRENT PLAN STRUCTURE:
 {chr(10).join(phases_summary)}
 
 Your task is to:
-1. Add a "what_you_learn" annotation to EVERY step
-2. Create global teaching notes that explain the overall learning arc
+1. Add a "teaching_guidance" instruction to EVERY step
+2. Create global teaching notes for the implementing AI agent
 
-GUIDELINES FOR "what_you_learn" ANNOTATIONS:
+CRITICAL: You are NOT teaching the user how to code. You are instructing the
+implementing AI agent what educational features to BUILD INTO the program.
+
+GUIDELINES FOR "teaching_guidance" INSTRUCTIONS:
 - Keep to 1-3 sentences
-- Focus on concepts, patterns, and transferable skills (not just "how to write X code")
-- Explain WHY this step matters for learning
-- Connect to broader software development principles
-- Match the {skill_level} skill level
-- Be specific and insightful, not generic
+- Specify concrete UI/documentation features to include
+- Tell the agent WHAT to build (tooltips, examples, help sections, etc.)
+- Focus on making the program itself educational
+- Be specific about what educational elements to add
+- Consider the {skill_level} of users who will use the final program
 
-EXAMPLES OF GOOD ANNOTATIONS:
-✓ "Learn how dataclasses reduce boilerplate while maintaining type safety. This pattern makes your code more maintainable and catches errors early."
-✓ "Understand the relationship between HTTP endpoints and API design. RESTful conventions make your API predictable and easy to use."
-✓ "Practice separating concerns by keeping database logic in dedicated functions. This makes testing easier and code more reusable."
-✓ "Experience async/await patterns for I/O-bound operations. This is crucial for building responsive applications that handle multiple requests efficiently."
+EXAMPLES OF GOOD INSTRUCTIONS:
+✓ "Add inline code comments explaining the dataclass pattern and include a tooltip in the UI showing an example of how dataclasses reduce boilerplate vs. traditional classes."
+✓ "Create a help section documenting the API endpoints with example requests/responses, and include tooltips explaining RESTful conventions when users hover over endpoint paths."
+✓ "Include a 'Database Design' section in the documentation showing the schema diagram, and add comments in the database functions explaining the separation of concerns pattern."
+✓ "Build an interactive demo showing async/await in action - let users click to see the execution flow, and include a side-by-side comparison with synchronous code."
 
-EXAMPLES OF BAD ANNOTATIONS:
-✗ "Learn about databases" (too vague)
-✗ "You'll understand how to use SQLite here" (focuses on tool, not concept)
-✗ "This teaches you programming" (generic, not specific)
-✗ "Master the entire stack in this step" (unrealistic scope)
+EXAMPLES OF BAD INSTRUCTIONS:
+✗ "Learn about databases" (this teaches the user, not the agent)
+✗ "You'll understand how to use SQLite here" (this is a lesson, not a build instruction)
+✗ "Make sure users learn programming" (too vague, no specific features)
+✗ "Add documentation" (not specific enough about what to document or how)
 
 GUIDELINES FOR GLOBAL TEACHING NOTES:
-- Write 3-5 sentences about the overall learning journey
-- Explain how the phases build on each other
-- Highlight key learning milestones
+- Write 3-5 sentences instructing the agent on overall educational strategy
+- Specify what overarching educational features to include
+- Describe the learning experience users should have
 - Connect to the stated learning goals
-- Encourage and motivate
+- Focus on the program as a teaching tool
 
 OUTPUT FORMAT (must be valid JSON):
 {{
@@ -184,7 +188,7 @@ OUTPUT FORMAT (must be valid JSON):
                     "index": 1,
                     "title": "Step title from input",
                     "description": "Step description from input",
-                    "what_you_learn": "YOUR TEACHING ANNOTATION HERE (1-3 sentences)",
+                    "teaching_guidance": "YOUR INSTRUCTION TO THE IMPLEMENTING AGENT HERE (1-3 sentences specifying what educational features to build)",
                     "dependencies": []
                 }},
                 ...
@@ -192,20 +196,21 @@ OUTPUT FORMAT (must be valid JSON):
         }},
         ...
     ],
-    "global_teaching_notes": "Your 3-5 sentence overview of the learning arc for this entire project..."
+    "global_teaching_notes": "Your 3-5 sentence overview of the educational strategy for the implementing agent to follow..."
 }}
 
 IMPORTANT:
 - Preserve all existing step data (title, description, dependencies, indices)
-- Only ADD the "what_you_learn" field and global_teaching_notes
-- Write annotations for ALL {sum(len(p.steps) for p in phases)} steps
-- Make each annotation specific to that step's content
-- Ensure progressive learning across the phases
+- Only ADD the "teaching_guidance" field and global_teaching_notes
+- Write guidance for ALL {sum(len(p.steps) for p in phases)} steps
+- Make each instruction specific to that step's implementation
+- Ensure coherent educational features across the phases
+- Remember: You're instructing an AI agent what to BUILD, not teaching a user how to CODE
 """
 
     return Task(
         description=description,
-        expected_output="JSON object with enriched phases (including what_you_learn for all steps) and global teaching notes",
+        expected_output="JSON object with enriched phases (including teaching_guidance for all steps) and global teaching notes for the implementing agent",
         agent=agent
     )
 
@@ -258,7 +263,7 @@ def parse_teaching_enrichment_result(result: str, original_phases: List[Phase]) 
                     index=step_data.get("index", original_step.index if original_step else step_idx + 1),
                     title=step_data.get("title", original_step.title if original_step else f"Step {step_idx + 1}"),
                     description=step_data.get("description", original_step.description if original_step else ""),
-                    what_you_learn=step_data.get("what_you_learn", ""),  # This is what TeacherAgent added
+                    teaching_guidance=step_data.get("teaching_guidance", ""),  # Instructions for implementing agent
                     dependencies=step_data.get("dependencies", original_step.dependencies if original_step else [])
                 )
                 steps.append(step)
@@ -287,26 +292,26 @@ def enrich_with_teaching(
     skill_level: str = "intermediate"
 ) -> tuple[List[Phase], str]:
     """
-    High-level function to enrich phases with teaching annotations.
+    High-level function to enrich phases with educational feature guidance.
 
     This is the main entry point for teaching enrichment. It:
     1. Creates the TeacherAgent
     2. Creates the enrichment task
     3. Executes the task
-    4. Merges teaching annotations into the phases
+    4. Merges educational guidance into the phases
 
     Args:
         phases: List of Phase objects from PhaseDesignerAgent
         goals: Learning and technical objectives
-        skill_level: User's skill level
+        skill_level: Target user's skill level for the final program
 
     Returns:
-        Tuple of (enriched phases with what_you_learn fields, global teaching notes)
+        Tuple of (enriched phases with teaching_guidance fields, global teaching notes for implementing agent)
 
     Usage:
         >>> enriched_phases, global_notes = enrich_with_teaching(phases, goals, "intermediate")
-        >>> print(enriched_phases[0].steps[0].what_you_learn)
-        "Learn how to structure a Python project with proper package organization..."
+        >>> print(enriched_phases[0].steps[0].teaching_guidance)
+        "Add inline comments explaining the project structure and include a README section with package organization diagram..."
     """
     agent = create_teacher_agent()
     task = create_teaching_enrichment_task(agent, phases, goals, skill_level)
@@ -314,7 +319,7 @@ def enrich_with_teaching(
     # Execute the task
     result = task.execute()
 
-    # Parse and merge teaching annotations
+    # Parse and merge teaching guidance
     enriched_phases, global_notes = parse_teaching_enrichment_result(result, phases)
 
     return enriched_phases, global_notes

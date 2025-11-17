@@ -330,8 +330,8 @@ SAMPLE STEPS:
         plan_summary += f"\nPhase {phase.index}: {phase.name}\n"
         for step in phase.steps[:3]:
             plan_summary += f"  {step.index}. {step.title}\n"
-            if step.what_you_learn:
-                plan_summary += f"     Learn: {step.what_you_learn[:100]}...\n"
+            if step.teaching_guidance:
+                plan_summary += f"     Educational Guidance: {step.teaching_guidance[:100]}...\n"
 
     description = f"""
 Evaluate this project plan for quality and learning value.

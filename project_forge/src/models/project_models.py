@@ -35,13 +35,15 @@ class ProjectGoals:
     Learning and technical objectives extracted from the project idea.
 
     GoalsAnalyzerAgent populates this model by analyzing the refined ProjectIdea
-    and extracting what the user should learn (concepts, patterns) and what they
-    should build (technical deliverables). These goals guide framework selection
-    and teaching enrichment.
+    and extracting what end-users should learn from USING the program (concepts,
+    patterns they'll encounter) and what the program should do (technical deliverables).
+    These goals guide framework selection and educational feature design.
 
     Attributes:
-        learning_goals: List of concepts/skills the user will learn (e.g., "async programming")
-        technical_goals: List of technical deliverables (e.g., "REST API", "web scraper")
+        learning_goals: List of concepts/skills end-users will learn by USING the program
+                       (e.g., "understand async patterns through interactive demos")
+        technical_goals: List of technical deliverables the program provides
+                        (e.g., "REST API with documentation", "interactive web scraper tutorial")
         priority_notes: Notes on which goals are most important or time-sensitive
     """
     learning_goals: List[str] = field(default_factory=list)
@@ -76,20 +78,21 @@ class Step:
     A single implementation step within a phase.
 
     Steps are small, concrete tasks that PhaseDesignerAgent creates and TeacherAgent
-    enriches with learning notes. Each step should be completable in a short session.
-    Dependencies track which steps must be completed first.
+    enriches with educational feature guidance. Each step should be completable in
+    a short session. Dependencies track which steps must be completed first.
 
     Attributes:
         index: Unique step number (global across all phases)
         title: Short, actionable step name (e.g., "Create user authentication endpoint")
         description: Detailed instructions for what to build in this step
-        what_you_learn: Teaching annotation added by TeacherAgent explaining the concepts
+        teaching_guidance: Instructions for implementing agent on what educational features to build
+                          (tooltips, examples, documentation, interactive demos, etc.)
         dependencies: List of step indices that must be completed before this one
     """
     index: int
     title: str
     description: str = ""
-    what_you_learn: str = ""
+    teaching_guidance: str = ""
     dependencies: List[int] = field(default_factory=list)  # indices of prerequisite steps
 
 
