@@ -1,0 +1,19 @@
+# Project Forge Dependencies
+# Python 3.11+ recommended
+
+# CrewAI for multi-agent orchestration
+crewai>=0.1.0
+
+# LLM providers
+openai>=1.0.0
+
+# YAML configuration
+pyyaml>=6.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Development dependencies (optional)
+# pytest>=7.0.0
+# black>=23.0.0
+# flake8>=6.0.0

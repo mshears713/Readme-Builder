@@ -1,0 +1,141 @@
+# Project Forge Default Configuration
+#
+# This file contains default settings for the multi-agent system including
+# skill level presets, framework templates, and agent behavior parameters.
+# Edit these values to customize how Project Forge generates plans.
+
+# Skill Level Presets
+# These guide FrameworkSelectorAgent to choose appropriate tech stacks
+# based on the user's experience level
+skill_levels:
+  beginner:
+    description: "New to programming or the specific domain"
+    max_complexity: "low"
+    preferred_frameworks:
+      frontend: ["Streamlit", "Gradio", "None"]
+      backend: ["FastAPI", "Flask", "CLI-only"]
+      storage: ["JSON files", "CSV files", "SQLite"]
+      avoid: ["Kubernetes", "Microservices", "GraphQL", "Complex ORMs"]
+    learning_pace: "slow"  # More teaching, smaller steps
+    step_size: "small"  # Steps should be very granular
+
+  intermediate:
+    description: "Comfortable with basics, ready for more complex patterns"
+    max_complexity: "medium"
+    preferred_frameworks:
+      frontend: ["Streamlit", "React", "Vue", "Flask+Jinja"]
+      backend: ["FastAPI", "Flask", "Django", "Express"]
+      storage: ["SQLite", "PostgreSQL", "MongoDB", "Redis"]
+      avoid: ["Custom distributed systems", "Low-level optimization"]
+    learning_pace: "moderate"
+    step_size: "medium"
+
+  advanced:
+    description: "Experienced developer looking for challenging projects"
+    max_complexity: "high"
+    preferred_frameworks:
+      frontend: ["React", "Vue", "Svelte", "Next.js"]
+      backend: ["FastAPI", "Django", "Express", "Nest.js", "Custom"]
+      storage: ["PostgreSQL", "MongoDB", "Redis", "Custom solutions"]
+      avoid: []  # No restrictions
+    learning_pace: "fast"  # Less hand-holding
+    step_size: "large"  # Steps can cover more ground
+
+# Default Project Settings
+project_defaults:
+  phase_count: 5
+  total_steps: 50
+  steps_per_phase: 10
+  default_skill_level: "intermediate"
+  default_complexity: "medium"
+  default_time_constraint: "1-2 weeks"
+
+# Framework Templates
+# Common tech stack combinations that work well together
+framework_templates:
+  minimal_cli:
+    description: "Simple command-line tool with file storage"
+    frontend: null
+    backend: "CLI-only"
+    storage: "JSON files"
+    common_libs: ["argparse", "pathlib", "json"]
+
+  streamlit_app:
+    description: "Interactive web app with Streamlit"
+    frontend: "Streamlit"
+    backend: "Streamlit (built-in)"
+    storage: "SQLite"
+    common_libs: ["streamlit", "pandas", "sqlite3"]
+
+  rest_api:
+    description: "RESTful API with database"
+    frontend: null
+    backend: "FastAPI"
+    storage: "SQLite"
+    common_libs: ["fastapi", "pydantic", "sqlalchemy", "uvicorn"]
+
+  full_stack:
+    description: "Complete web application"
+    frontend: "React"
+    backend: "FastAPI"
+    storage: "PostgreSQL"
+    common_libs: ["fastapi", "react", "postgresql", "pydantic"]
+
+  agent_system:
+    description: "Multi-agent AI system"
+    frontend: "Streamlit"
+    backend: "Python"
+    storage: "JSON files"
+    common_libs: ["crewai", "langchain", "openai", "streamlit"]
+
+# Agent Behavior Parameters
+agent_settings:
+  concept_expander:
+    min_refined_length: 50  # words
+    max_refined_length: 200
+    should_extract_constraints: true
+
+  goals_analyzer:
+    min_learning_goals: 2
+    max_learning_goals: 5
+    min_technical_goals: 2
+    max_technical_goals: 4
+
+  framework_selector:
+    prefer_simplicity: true
+    prefer_popular: true  # Well-documented, widely-used frameworks
+    avoid_bleeding_edge: true
+
+  phase_designer:
+    enforce_phase_balance: true
+    max_steps_per_phase: 12
+    min_steps_per_phase: 8
+    allow_flexible_step_count: true
+
+  teacher_agent:
+    teaching_detail_level: "detailed"  # "brief", "moderate", "detailed"
+    include_why_explanations: true
+    include_common_pitfalls: true
+
+  evaluator:
+    clarity_threshold: 7
+    feasibility_threshold: 6
+    teaching_value_threshold: 7
+    max_revision_rounds: 2
+
+# README/PRD Template Settings
+output_settings:
+  output_directory: "output"
+  filename_pattern: "{project_name}_README.md"
+  include_ascii_diagrams: true
+  include_learning_notes: true
+  include_setup_instructions: true
+  include_example_commands: true
+  markdown_style: "github"  # GitHub-flavored markdown
+
+# Logging and Debug
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_agent_decisions: true
+  log_intermediate_outputs: false
+  save_intermediate_plans: false
