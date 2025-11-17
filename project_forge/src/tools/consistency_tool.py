@@ -108,13 +108,48 @@ def check_step_numbering(phases: List[Any]) -> ConsistencyReport:
     Returns:
         ConsistencyReport with any issues found
 
-    Note:
-        Stub implementation - will be enhanced in Phase 3.
+    Teaching Note (Phase 3):
+        Sequential numbering across phases helps users track overall progress
+        through the project. Each step should have a unique global index.
     """
     report = ConsistencyReport()
 
-    # Placeholder logic - to be implemented in Phase 3
-    report.summary = "Step numbering check not yet implemented (Phase 3 feature)"
+    if not phases:
+        report.summary = "No phases to check"
+        return report
+
+    expected_index = 1
+    all_indices = []
+
+    for phase in phases:
+        for step in phase.steps:
+            all_indices.append(step.index)
+
+            if step.index != expected_index:
+                report.issues.append(ConsistencyIssue(
+                    severity='warning',
+                    category='step_numbering',
+                    message=f"Expected step index {expected_index} but found {step.index}",
+                    location=f"Phase {phase.index}, Step '{step.title}'"
+                ))
+
+            expected_index += 1
+
+    # Check for duplicate indices
+    duplicates = [idx for idx in set(all_indices) if all_indices.count(idx) > 1]
+    if duplicates:
+        for dup in duplicates:
+            report.issues.append(ConsistencyIssue(
+                severity='error',
+                category='step_numbering',
+                message=f"Duplicate step index: {dup}",
+                location="Multiple steps"
+            ))
+        report.passed = False
+
+    if not report.issues:
+        total_steps = len(all_indices)
+        report.summary = f"Step numbering is correct: {total_steps} sequential steps"
 
     return report
 
@@ -134,13 +169,48 @@ def check_dependencies(phases: List[Any]) -> ConsistencyReport:
     Returns:
         ConsistencyReport with any issues found
 
-    Note:
-        Stub implementation - will be enhanced in Phase 3.
+    Teaching Note (Phase 3):
+        Valid dependencies ensure that the build plan is executable in order.
+        Steps should only depend on earlier steps to avoid circular logic.
     """
     report = ConsistencyReport()
 
-    # Placeholder logic - to be implemented in Phase 3
-    report.summary = "Dependency check not yet implemented (Phase 3 feature)"
+    if not phases:
+        report.summary = "No phases to check"
+        return report
+
+    # Collect all valid step indices
+    all_step_indices = []
+    for phase in phases:
+        for step in phase.steps:
+            all_step_indices.append(step.index)
+
+    # Check each step's dependencies
+    for phase in phases:
+        for step in phase.steps:
+            for dep_index in step.dependencies:
+                # Check if dependency exists
+                if dep_index not in all_step_indices:
+                    report.issues.append(ConsistencyIssue(
+                        severity='error',
+                        category='dependencies',
+                        message=f"References non-existent step {dep_index}",
+                        location=f"Phase {phase.index}, Step {step.index} '{step.title}'"
+                    ))
+                    report.passed = False
+
+                # Check if dependency is earlier (no forward or self-references)
+                elif dep_index >= step.index:
+                    report.issues.append(ConsistencyIssue(
+                        severity='error',
+                        category='dependencies',
+                        message=f"References step {dep_index} which is not earlier than current step {step.index}",
+                        location=f"Phase {phase.index}, Step {step.index} '{step.title}'"
+                    ))
+                    report.passed = False
+
+    if not report.issues:
+        report.summary = "All dependencies are valid"
 
     return report
 
@@ -158,21 +228,46 @@ def validate_project_plan(plan: Any) -> ConsistencyReport:
     Returns:
         Combined ConsistencyReport with all issues found
 
-    Note:
-        Stub implementation - will be enhanced in Phase 3 to run full suite
-        of checks and provide detailed validation.
+    Teaching Note (Phase 3):
+        Comprehensive validation catches structural problems before README
+        generation. This prevents generating broken plans that users can't execute.
     """
     report = ConsistencyReport()
 
-    # For Phase 1, just do a basic phase count check
-    if hasattr(plan, 'phases'):
-        phase_report = check_phase_count(plan.phases)
-        report.issues.extend(phase_report.issues)
-        report.passed = phase_report.passed and report.passed
+    if not hasattr(plan, 'phases'):
+        report.issues.append(ConsistencyIssue(
+            severity='error',
+            category='structure',
+            message="ProjectPlan has no 'phases' attribute",
+            location="ProjectPlan"
+        ))
+        report.passed = False
+        report.summary = "Critical structure error"
+        return report
 
+    # Run all consistency checks
+    phase_count_report = check_phase_count(plan.phases)
+    report.issues.extend(phase_count_report.issues)
+    if not phase_count_report.passed:
+        report.passed = False
+
+    step_numbering_report = check_step_numbering(plan.phases)
+    report.issues.extend(step_numbering_report.issues)
+    if not step_numbering_report.passed:
+        report.passed = False
+
+    dependencies_report = check_dependencies(plan.phases)
+    report.issues.extend(dependencies_report.issues)
+    if not dependencies_report.passed:
+        report.passed = False
+
+    # Generate summary
     if not report.issues:
-        report.summary = "Basic consistency checks passed (Phase 1 validation)"
+        total_steps = sum(len(phase.steps) for phase in plan.phases)
+        report.summary = f"All consistency checks passed: {len(plan.phases)} phases, {total_steps} steps"
     else:
-        report.summary = f"Found {len(report.issues)} consistency issues"
+        error_count = report.get_error_count()
+        warning_count = report.get_warning_count()
+        report.summary = f"Found {error_count} errors and {warning_count} warnings"
 
     return report

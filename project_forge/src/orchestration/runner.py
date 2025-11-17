@@ -79,6 +79,14 @@ Examples:
         help="Enable verbose logging of agent actions"
     )
 
+    parser.add_argument(
+        "--phase",
+        type=int,
+        choices=[2, 3],
+        default=3,
+        help="Which phase to run: 2 (planning only) or 3 (full plan with phases/teaching)"
+    )
+
     return parser.parse_args()
 
 
@@ -112,7 +120,12 @@ def main():
     - FrameworkSelectorAgent: choose appropriate tech stack
     - RubricTool: evaluate concept clarity
 
-    Phase 3 will add: PhaseDesigner, TeacherAgent, EvaluatorAgent.
+    Phase 3 implementation: Run the full planning+teaching crew.
+    - All Phase 2 agents plus:
+    - PhaseDesigner: creates 5 phases with ~50 steps
+    - TeacherAgent: adds teaching annotations to steps
+    - EvaluatorAgent: validates plan quality
+
     Phase 4 will add: PRDWriterAgent and file output.
     Phase 5 will add: advanced options and error handling.
     """
@@ -127,7 +140,7 @@ def main():
         sys.exit(1)
 
     print("=" * 80)
-    print("PROJECT FORGE - Phase 2")
+    print(f"PROJECT FORGE - Phase {args.phase}")
     print("=" * 80)
     print()
     print(f"Configuration:")
@@ -135,54 +148,114 @@ def main():
     print(f"  Complexity:   {args.complexity}")
     print(f"  Time Frame:   {args.time}")
     print(f"  Verbose:      {args.verbose}")
+    print(f"  Phase:        {args.phase}")
     print()
 
-    # Phase 2: Run the planning crew
-    # This executes ConceptExpander → GoalsAnalyzer → FrameworkSelector
     try:
-        from .crew_config import create_planning_crew
+        if args.phase == 2:
+            # Phase 2: Run planning crew only
+            from .crew_config import create_planning_crew
 
-        # Run the planning crew with the raw idea
-        result = create_planning_crew(
-            raw_idea=idea,
-            skill_level=args.skill,
-            verbose=args.verbose
-        )
+            result = create_planning_crew(
+                raw_idea=idea,
+                skill_level=args.skill,
+                verbose=args.verbose
+            )
 
-        # Display final summary
-        print("=" * 80)
-        print("PLANNING SUMMARY")
-        print("=" * 80)
-        print()
-        print("PROJECT CONCEPT:")
-        print(f"  {result.project_idea.refined_summary}")
-        print()
-        print("LEARNING GOALS:")
-        for i, goal in enumerate(result.project_goals.learning_goals, 1):
-            print(f"  {i}. {goal}")
-        print()
-        print("TECHNICAL GOALS:")
-        for i, goal in enumerate(result.project_goals.technical_goals, 1):
-            print(f"  {i}. {goal}")
-        print()
-        print("TECHNOLOGY STACK:")
-        print(f"  Frontend:  {result.framework_choice.frontend or 'None (CLI-only)'}")
-        print(f"  Backend:   {result.framework_choice.backend or 'None'}")
-        print(f"  Storage:   {result.framework_choice.storage or 'None'}")
-        if result.framework_choice.special_libs:
-            print(f"  Libraries: {', '.join(result.framework_choice.special_libs)}")
-        print()
-        print("QUALITY METRICS:")
-        print(f"  Concept Clarity: {result.clarity_score.score}/10")
-        print(f"  Feedback: {result.clarity_score.feedback}")
-        print()
-        print("=" * 80)
-        print("Phase 2 Status: Planning crew complete ✓")
-        print("Next: Phase 3 will add phase design and teaching enrichment")
-        print("=" * 80)
+            # Display final summary
+            print("=" * 80)
+            print("PLANNING SUMMARY")
+            print("=" * 80)
+            print()
+            print("PROJECT CONCEPT:")
+            print(f"  {result.project_idea.refined_summary}")
+            print()
+            print("LEARNING GOALS:")
+            for i, goal in enumerate(result.project_goals.learning_goals, 1):
+                print(f"  {i}. {goal}")
+            print()
+            print("TECHNICAL GOALS:")
+            for i, goal in enumerate(result.project_goals.technical_goals, 1):
+                print(f"  {i}. {goal}")
+            print()
+            print("TECHNOLOGY STACK:")
+            print(f"  Frontend:  {result.framework_choice.frontend or 'None (CLI-only)'}")
+            print(f"  Backend:   {result.framework_choice.backend or 'None'}")
+            print(f"  Storage:   {result.framework_choice.storage or 'None'}")
+            if result.framework_choice.special_libs:
+                print(f"  Libraries: {', '.join(result.framework_choice.special_libs)}")
+            print()
+            print("QUALITY METRICS:")
+            print(f"  Concept Clarity: {result.clarity_score.score}/10")
+            print(f"  Feedback: {result.clarity_score.feedback}")
+            print()
+            print("=" * 80)
+            print("Phase 2 Status: Planning crew complete ✓")
+            print("Use --phase 3 to generate full project plan with phases and teaching")
+            print("=" * 80)
+
+        elif args.phase == 3:
+            # Phase 3: Run full plan crew
+            from .crew_config import create_full_plan_crew
+
+            result = create_full_plan_crew(
+                raw_idea=idea,
+                skill_level=args.skill,
+                verbose=args.verbose,
+                max_iterations=2
+            )
+
+            # Display final summary
+            plan = result.project_plan
+            eval_result = result.evaluation
+
+            print("=" * 80)
+            print("FULL PLAN SUMMARY")
+            print("=" * 80)
+            print()
+            print("PROJECT CONCEPT:")
+            print(f"  {plan.idea.refined_summary}")
+            print()
+            print("LEARNING GOALS:")
+            for i, goal in enumerate(plan.goals.learning_goals, 1):
+                print(f"  {i}. {goal}")
+            print()
+            print("TECHNOLOGY STACK:")
+            print(f"  Frontend:  {plan.framework.frontend or 'None (CLI-only)'}")
+            print(f"  Backend:   {plan.framework.backend or 'None'}")
+            print(f"  Storage:   {plan.framework.storage or 'None'}")
+            if plan.framework.special_libs:
+                print(f"  Libraries: {', '.join(plan.framework.special_libs)}")
+            print()
+            print("PROJECT STRUCTURE:")
+            for phase in plan.phases:
+                print(f"  Phase {phase.index}: {phase.name} ({len(phase.steps)} steps)")
+            total_steps = sum(len(p.steps) for p in plan.phases)
+            print(f"  Total: {len(plan.phases)} phases, {total_steps} steps")
+            print()
+            print("TEACHING ENRICHMENT:")
+            steps_with_teaching = sum(
+                1 for p in plan.phases for s in p.steps
+                if s.what_you_learn and len(s.what_you_learn.strip()) > 10
+            )
+            print(f"  {steps_with_teaching}/{total_steps} steps have learning annotations")
+            print(f"  Global notes: {len(plan.teaching_notes)} characters")
+            print()
+            print("EVALUATION:")
+            print(f"  Status: {'✓ Approved' if eval_result.approved else '✗ Needs work'}")
+            print(f"  Iterations: {result.iterations}")
+            if eval_result.scores:
+                from ..tools.rubric_tool import RubricCriterion
+                for criterion, score in eval_result.scores.items():
+                    print(f"  {criterion.value.title()}: {score.score}/10")
+            print()
+            print("=" * 80)
+            print("Phase 3 Status: Full plan generation complete ✓")
+            print("Next: Phase 4 will add README/PRD output to file")
+            print("=" * 80)
 
     except Exception as e:
-        print(f"Error running planning crew: {e}", file=sys.stderr)
+        print(f"Error running crew: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         sys.exit(1)
