@@ -1,0 +1,66 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Python cache and virtual environments
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+venv
+env
+ENV
+.venv
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files (will be mounted via docker-compose)
+.env
+.env.local
+.env.*.local
+
+# Output directories (will be mounted as volumes)
+output/
+input/
+
+# Test files
+tests/
+*.test.py
+.pytest_cache
+.coverage
+htmlcov
+
+# Documentation (except README.md which is included)
+*.md
+!README.md
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache
+
+# Docker files (no need to copy into image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+*.bat
+
+# OS specific
+Thumbs.db
