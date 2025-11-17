@@ -106,9 +106,14 @@ def main():
     """
     Main CLI entrypoint for Project Forge.
 
-    Phase 1 implementation: Just print the raw idea and configuration.
-    Phase 2 will add: crew initialization and execution.
-    Phase 4 will add: README/PRD file writing.
+    Phase 2 implementation: Run the planning crew and display results.
+    - ConceptExpanderAgent: refine the raw idea
+    - GoalsAnalyzerAgent: extract learning and technical goals
+    - FrameworkSelectorAgent: choose appropriate tech stack
+    - RubricTool: evaluate concept clarity
+
+    Phase 3 will add: PhaseDesigner, TeacherAgent, EvaluatorAgent.
+    Phase 4 will add: PRDWriterAgent and file output.
     Phase 5 will add: advanced options and error handling.
     """
     args = parse_arguments()
@@ -121,32 +126,66 @@ def main():
         print("Usage: python -m src.orchestration.runner \"Your project idea\"", file=sys.stderr)
         sys.exit(1)
 
-    # Phase 1: Just print the raw idea and parameters
     print("=" * 80)
-    print("PROJECT FORGE - Phase 1 Placeholder")
+    print("PROJECT FORGE - Phase 2")
     print("=" * 80)
-    print()
-    print(f"Raw Project Idea:")
-    print(f"  {idea}")
     print()
     print(f"Configuration:")
     print(f"  Skill Level:  {args.skill}")
     print(f"  Complexity:   {args.complexity}")
     print(f"  Time Frame:   {args.time}")
-    print(f"  Output Dir:   {args.output_dir}")
     print(f"  Verbose:      {args.verbose}")
     print()
-    print("=" * 80)
-    print("Phase 1 Status: Foundation complete ✓")
-    print("Next: Phase 2 will implement agent logic and crew execution")
-    print("=" * 80)
 
-    # TODO Phase 2: Initialize crew
-    # from .crew_config import create_crew
-    # crew = create_crew()
+    # Phase 2: Run the planning crew
+    # This executes ConceptExpander → GoalsAnalyzer → FrameworkSelector
+    try:
+        from .crew_config import create_planning_crew
 
-    # TODO Phase 2: Run the crew with the idea
-    # result = crew.kickoff(inputs={"idea": idea, "skill": args.skill, ...})
+        # Run the planning crew with the raw idea
+        result = create_planning_crew(
+            raw_idea=idea,
+            skill_level=args.skill,
+            verbose=args.verbose
+        )
+
+        # Display final summary
+        print("=" * 80)
+        print("PLANNING SUMMARY")
+        print("=" * 80)
+        print()
+        print("PROJECT CONCEPT:")
+        print(f"  {result.project_idea.refined_summary}")
+        print()
+        print("LEARNING GOALS:")
+        for i, goal in enumerate(result.project_goals.learning_goals, 1):
+            print(f"  {i}. {goal}")
+        print()
+        print("TECHNICAL GOALS:")
+        for i, goal in enumerate(result.project_goals.technical_goals, 1):
+            print(f"  {i}. {goal}")
+        print()
+        print("TECHNOLOGY STACK:")
+        print(f"  Frontend:  {result.framework_choice.frontend or 'None (CLI-only)'}")
+        print(f"  Backend:   {result.framework_choice.backend or 'None'}")
+        print(f"  Storage:   {result.framework_choice.storage or 'None'}")
+        if result.framework_choice.special_libs:
+            print(f"  Libraries: {', '.join(result.framework_choice.special_libs)}")
+        print()
+        print("QUALITY METRICS:")
+        print(f"  Concept Clarity: {result.clarity_score.score}/10")
+        print(f"  Feedback: {result.clarity_score.feedback}")
+        print()
+        print("=" * 80)
+        print("Phase 2 Status: Planning crew complete ✓")
+        print("Next: Phase 3 will add phase design and teaching enrichment")
+        print("=" * 80)
+
+    except Exception as e:
+        print(f"Error running planning crew: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
     # TODO Phase 4: Write the README/PRD to disk
     # output_path = Path(args.output_dir) / "PROJECT_README.md"
