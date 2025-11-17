@@ -111,7 +111,8 @@ class FullPlanWithReadmeResult:
     iterations: int = 1
 
 
-def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbose: bool = True) -> PlanningResult:
+def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbose: bool = True,
+                         progress_callback=None) -> PlanningResult:
     """
     Create and run the planning crew (Phase 2).
 
@@ -124,6 +125,7 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
         raw_idea: Raw project idea from user input
         skill_level: User's skill level (beginner/intermediate/advanced)
         verbose: Whether to print detailed agent execution logs
+        progress_callback: Optional callback function(agent_name, progress_percent, message)
 
     Returns:
         PlanningResult with all planning outputs
@@ -149,6 +151,9 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
     print("STEP 1/3: Expanding project concept...")
     print(f"Raw idea: {raw_idea}\n")
 
+    if progress_callback:
+        progress_callback("ConceptExpander", 10, "📝 Expanding project concept...")
+
     concept_agent = create_concept_expander_agent()
     concept_task = create_concept_expansion_task(concept_agent, raw_idea, skill_level)
     concept_result = concept_task.execute()
@@ -165,9 +170,15 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
     print(f"  Clarity score: {clarity_score.score}/10")
     print(f"  Feedback: {clarity_score.feedback}\n")
 
+    if progress_callback:
+        progress_callback("GoalsAnalyzer", 40, "✅ ConceptExpander completed")
+
     # STEP 2: Goals Analysis
     # Extract learning and technical goals from the refined concept
     print("STEP 2/3: Analyzing learning and technical goals...")
+
+    if progress_callback:
+        progress_callback("GoalsAnalyzer", 40, "🎯 Analyzing learning goals...")
 
     goals_agent = create_goals_analyzer_agent()
     goals_task = create_goals_analysis_task(goals_agent, project_idea, skill_level)
@@ -184,9 +195,15 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
         print(f"  - {goal}")
     print(f"\n  Priority: {project_goals.priority_notes}\n")
 
+    if progress_callback:
+        progress_callback("FrameworkSelector", 70, "✅ GoalsAnalyzer completed")
+
     # STEP 3: Framework Selection
     # Choose appropriate tech stack based on concept and goals
     print("STEP 3/3: Selecting technology stack...")
+
+    if progress_callback:
+        progress_callback("FrameworkSelector", 70, "🔧 Selecting technology stack...")
 
     framework_agent = create_framework_selector_agent()
     framework_task = create_framework_selection_task(
@@ -207,6 +224,9 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
     if framework_choice.special_libs:
         print(f"  Libraries: {', '.join(framework_choice.special_libs)}")
     print()
+
+    if progress_callback:
+        progress_callback("FrameworkSelector", 100, "✅ FrameworkSelector completed")
 
     print("=" * 80)
     print("PLANNING COMPLETE")
@@ -255,7 +275,8 @@ def create_full_plan_crew(
     raw_idea: str,
     skill_level: str = "intermediate",
     verbose: bool = True,
-    max_iterations: int = 2
+    max_iterations: int = 2,
+    progress_callback=None
 ) -> FullPlanResult:
     """
     Create and run the complete planning+teaching crew (Phase 3).
@@ -274,6 +295,7 @@ def create_full_plan_crew(
         skill_level: User's skill level (beginner/intermediate/advanced)
         verbose: Whether to print detailed agent execution logs
         max_iterations: Maximum number of refinement iterations
+        progress_callback: Optional callback function(agent_name, progress_percent, message)
 
     Returns:
         FullPlanResult with complete ProjectPlan and evaluation
@@ -290,7 +312,7 @@ def create_full_plan_crew(
 
     # PHASE 2: Run planning crew to get concept, goals, and frameworks
     print("Running Phase 2 planning crew...")
-    planning_result = create_planning_crew(raw_idea, skill_level, verbose)
+    planning_result = create_planning_crew(raw_idea, skill_level, verbose, progress_callback)
 
     # PHASE 3: Build the detailed plan
     print("\n" + "=" * 80)
@@ -308,6 +330,9 @@ def create_full_plan_crew(
         # Create 5 phases with ~10 steps each
         print("STEP 4: Designing project phases and steps...")
 
+        if progress_callback:
+            progress_callback("PhaseDesigner", 50, "📋 Designing project phases...")
+
         phase_designer = create_phase_designer_agent()
         phase_task = create_phase_design_task(
             phase_designer,
@@ -324,9 +349,15 @@ def create_full_plan_crew(
         total_steps = sum(len(phase.steps) for phase in phases)
         print(f"✓ Created {len(phases)} phases with {total_steps} total steps\n")
 
+        if progress_callback:
+            progress_callback("TeacherAgent", 70, "✅ PhaseDesigner completed")
+
         # STEP 5: Teaching Enrichment
         # Add "what you'll learn" to each step
         print("STEP 5: Adding teaching annotations to steps...")
+
+        if progress_callback:
+            progress_callback("TeacherAgent", 70, "👨‍🏫 Adding teaching annotations...")
 
         teacher = create_teacher_agent()
         teaching_task = create_teaching_enrichment_task(
@@ -360,9 +391,15 @@ def create_full_plan_crew(
             teaching_notes=global_teaching_notes
         )
 
+        if progress_callback:
+            progress_callback("EvaluatorAgent", 90, "✅ TeacherAgent completed")
+
         # STEP 6: Evaluation
         # Validate plan quality and structure
         print("STEP 6: Evaluating plan quality...")
+
+        if progress_callback:
+            progress_callback("EvaluatorAgent", 90, "✅ Evaluating plan quality...")
 
         evaluation_result = evaluate_project_plan(project_plan, skill_level)
 
@@ -370,6 +407,8 @@ def create_full_plan_crew(
 
         if evaluation_result.approved:
             print(f"✓ Plan approved after {iteration} iteration(s)!\n")
+            if progress_callback:
+                progress_callback("EvaluatorAgent", 100, "✅ EvaluatorAgent completed")
             break
         elif iteration < max_iterations:
             print(f"Plan needs refinement. Starting iteration {iteration + 1}...\n")
@@ -380,6 +419,8 @@ def create_full_plan_crew(
             print(f"Max iterations reached. Using best-effort plan.\n")
             # Accept the plan even if not perfect after max iterations
             evaluation_result.approved = True
+            if progress_callback:
+                progress_callback("EvaluatorAgent", 100, "✅ EvaluatorAgent completed")
             break
 
     print("=" * 80)
@@ -397,7 +438,8 @@ def create_complete_pipeline(
     raw_idea: str,
     skill_level: str = "intermediate",
     verbose: bool = True,
-    max_iterations: int = 2
+    max_iterations: int = 2,
+    progress_callback=None
 ) -> FullPlanWithReadmeResult:
     """
     Create and run the complete Project Forge pipeline (Phase 4).
@@ -414,6 +456,7 @@ def create_complete_pipeline(
         skill_level: User's skill level (beginner/intermediate/advanced)
         verbose: Whether to print detailed agent execution logs
         max_iterations: Maximum number of refinement iterations
+        progress_callback: Optional callback function(agent_name, progress_percent, message)
 
     Returns:
         FullPlanWithReadmeResult with ProjectPlan, evaluation, and README content
@@ -433,7 +476,7 @@ def create_complete_pipeline(
 
     # PHASES 2-3: Run full plan crew to get validated ProjectPlan
     print("Running Phases 2-3: Planning, Design, Teaching, and Evaluation...\n")
-    plan_result = create_full_plan_crew(raw_idea, skill_level, verbose, max_iterations)
+    plan_result = create_full_plan_crew(raw_idea, skill_level, verbose, max_iterations, progress_callback)
 
     # PHASE 4: Convert ProjectPlan to README/PRD
     print("\n" + "=" * 80)
@@ -441,6 +484,9 @@ def create_complete_pipeline(
     print("=" * 80 + "\n")
 
     print("STEP 7: Generating comprehensive README/PRD document...")
+
+    if progress_callback:
+        progress_callback("PRDWriter", 90, "📄 Generating README/PRD...")
 
     prd_writer = create_prd_writer_agent()
     prd_task = create_prd_writing_task(prd_writer, plan_result.project_plan)
@@ -454,6 +500,9 @@ def create_complete_pipeline(
 
     print(f"✓ README generated ({len(readme_content)} characters)")
     print(f"✓ Project name: {project_name}\n")
+
+    if progress_callback:
+        progress_callback("PRDWriter", 100, "✅ PRDWriter completed")
 
     print("=" * 80)
     print("COMPLETE PIPELINE FINISHED")
