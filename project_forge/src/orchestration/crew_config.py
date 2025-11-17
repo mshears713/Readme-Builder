@@ -42,6 +42,12 @@ from ..agents.teacher_agent import (
     parse_teaching_enrichment_result
 )
 from ..agents.evaluator_agent import evaluate_project_plan, EvaluationResult
+from ..agents.prd_writer_agent import (
+    create_prd_writer_agent,
+    create_prd_writing_task,
+    parse_prd_writing_result,
+    generate_project_name
+)
 from ..tools.rubric_tool import evaluate_concept_clarity
 
 
@@ -80,6 +86,28 @@ class FullPlanResult:
     """
     project_plan: ProjectPlan
     evaluation: EvaluationResult
+    iterations: int = 1
+
+
+@dataclass
+class FullPlanWithReadmeResult:
+    """
+    Result from the complete pipeline including README generation (Phase 4).
+
+    Contains the full ProjectPlan, evaluation results, AND the final README/PRD
+    markdown text ready to be written to disk.
+
+    Attributes:
+        project_plan: Complete ProjectPlan object
+        evaluation: EvaluationResult from quality checks
+        readme_content: Final README/PRD markdown text
+        project_name: Generated project name for the output file
+        iterations: Number of refinement iterations performed
+    """
+    project_plan: ProjectPlan
+    evaluation: EvaluationResult
+    readme_content: str
+    project_name: str
     iterations: int = 1
 
 
@@ -365,15 +393,91 @@ def create_full_plan_crew(
     )
 
 
+def create_complete_pipeline(
+    raw_idea: str,
+    skill_level: str = "intermediate",
+    verbose: bool = True,
+    max_iterations: int = 2
+) -> FullPlanWithReadmeResult:
+    """
+    Create and run the complete Project Forge pipeline (Phase 4).
+
+    This is the full end-to-end flow that includes ALL agents:
+    1-3. ConceptExpander, GoalsAnalyzer, FrameworkSelector (Phase 2)
+    4. PhaseDesigner: creates 5 phases with ~50 steps (Phase 3)
+    5. TeacherAgent: enriches steps with teaching annotations (Phase 3)
+    6. EvaluatorAgent: validates plan quality and structure (Phase 3)
+    7. PRDWriterAgent: converts ProjectPlan to README/PRD markdown (Phase 4)
+
+    Args:
+        raw_idea: Raw project idea from user input
+        skill_level: User's skill level (beginner/intermediate/advanced)
+        verbose: Whether to print detailed agent execution logs
+        max_iterations: Maximum number of refinement iterations
+
+    Returns:
+        FullPlanWithReadmeResult with ProjectPlan, evaluation, and README content
+
+    Teaching Note:
+        This is the "orchestrator of orchestrators." It:
+        1. Runs create_full_plan_crew() to get the validated ProjectPlan
+        2. Runs PRDWriterAgent to convert the plan to markdown
+        3. Returns everything packaged together for easy file writing
+
+        This separation (plan creation vs. README writing) maintains clean
+        separation of concerns and makes testing easier.
+    """
+    print("\n" + "=" * 80)
+    print("COMPLETE PROJECT FORGE PIPELINE - Phase 4")
+    print("=" * 80 + "\n")
+
+    # PHASES 2-3: Run full plan crew to get validated ProjectPlan
+    print("Running Phases 2-3: Planning, Design, Teaching, and Evaluation...\n")
+    plan_result = create_full_plan_crew(raw_idea, skill_level, verbose, max_iterations)
+
+    # PHASE 4: Convert ProjectPlan to README/PRD
+    print("\n" + "=" * 80)
+    print("README/PRD GENERATION - Phase 4")
+    print("=" * 80 + "\n")
+
+    print("STEP 7: Generating comprehensive README/PRD document...")
+
+    prd_writer = create_prd_writer_agent()
+    prd_task = create_prd_writing_task(prd_writer, plan_result.project_plan)
+    prd_result = prd_task.execute()
+
+    # Parse the README content
+    readme_content = parse_prd_writing_result(prd_result, plan_result.project_plan)
+
+    # Generate project name for the output file
+    project_name = generate_project_name(plan_result.project_plan)
+
+    print(f"✓ README generated ({len(readme_content)} characters)")
+    print(f"✓ Project name: {project_name}\n")
+
+    print("=" * 80)
+    print("COMPLETE PIPELINE FINISHED")
+    print("=" * 80 + "\n")
+
+    return FullPlanWithReadmeResult(
+        project_plan=plan_result.project_plan,
+        evaluation=plan_result.evaluation,
+        readme_content=readme_content,
+        project_name=project_name,
+        iterations=plan_result.iterations
+    )
+
+
 def create_crew():
     """
     Legacy crew creation function (Phase 1 compatibility).
 
     Phase 2 uses create_planning_crew() instead.
     Phase 3 uses create_full_plan_crew() instead.
+    Phase 4 uses create_complete_pipeline() instead.
 
     Returns:
         None (legacy stub)
     """
-    print("Note: Use create_planning_crew() for Phase 2 or create_full_plan_crew() for Phase 3")
+    print("Note: Use create_complete_pipeline() for the full Phase 4 pipeline")
     return None
