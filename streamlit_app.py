@@ -73,7 +73,8 @@ page = st.sidebar.radio(
         "👨‍🏫 Teacher Agent",
         "✅ Evaluator Agent",
         "📄 PRD Writer",
-        "🔍 Logs & Debug"
+        "🔍 Logs & Debug",
+        "🔍 Tracing"
     ]
 )
 
@@ -143,6 +144,9 @@ elif page == "📄 PRD Writer":
     prd_writer.render()
 elif page == "🔍 Logs & Debug":
     logs.render()
+elif page == "🔍 Tracing":
+    from streamlit_ui.pages import tracing
+    tracing.render()
 
 # Footer
 st.sidebar.markdown("---")
