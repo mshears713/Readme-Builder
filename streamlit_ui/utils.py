@@ -22,6 +22,7 @@ def initialize_session_state():
     """
     defaults = {
         # Execution state
+        "execution_should_start": False,
         "execution_started": False,
         "execution_completed": False,
         "execution_error": None,
@@ -83,7 +84,7 @@ def initialize_session_state():
 def reset_execution_state():
     """Reset the execution state for a new run."""
     keys_to_reset = [
-        "execution_started", "execution_completed", "execution_error",
+        "execution_should_start", "execution_started", "execution_completed", "execution_error",
         "start_time", "end_time", "current_agent", "progress_percent",
         "ConceptExpander_completed", "GoalsAnalyzer_completed",
         "FrameworkSelector_completed", "PhaseDesigner_completed",

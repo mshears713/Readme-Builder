@@ -20,9 +20,10 @@ from streamlit_ui.utils import (
 )
 
 
-def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: int, verbose: bool):
+def run_pipeline_with_ui_updates(raw_idea: str, skill_level: str, phase: int, max_iterations: int, verbose: bool,
+                                  status_container, progress_bar, agent_display, time_display):
     """
-    Execute the Project Forge pipeline and update session state with results.
+    Execute the Project Forge pipeline with real-time UI updates.
 
     Args:
         raw_idea: The user's project idea
@@ -30,6 +31,10 @@ def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: in
         phase: Which phase to run (2, 3, or 4)
         max_iterations: Maximum refinement iterations
         verbose: Whether to show verbose output
+        status_container: Streamlit container for status messages
+        progress_bar: Streamlit progress bar
+        agent_display: Streamlit container for current agent display
+        time_display: Streamlit container for elapsed time display
     """
     try:
         # Import orchestration functions
@@ -43,17 +48,32 @@ def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: in
         st.session_state.start_time = datetime.now()
         add_log(f"Starting Phase {phase} pipeline for: {raw_idea[:50]}...", "INFO")
 
+        def update_ui():
+            """Helper to update UI elements during execution."""
+            agent_display.info(f"Current Agent: **{st.session_state.get('current_agent', 'Processing...')}**")
+            progress_bar.progress(st.session_state.get("progress_percent", 0) / 100.0)
+            elapsed = get_elapsed_time()
+            if elapsed:
+                time_display.write(f"⏱️ Elapsed Time: {elapsed}")
+
+        def progress_callback(agent_name: str, progress: int, message: str):
+            """Callback function for backend to report progress."""
+            update_progress(agent_name, progress)
+            update_ui()
+            status_container.write(message)
+
         # Capture output
         with CaptureOutput() as capture:
             if phase == 2:
                 # Phase 2: Planning only (ConceptExpander, GoalsAnalyzer, FrameworkSelector)
                 add_log("Running Phase 2: Planning Crew", "INFO")
-                update_progress("ConceptExpander", 10)
+                status_container.write("🔍 **Phase 2: Planning Crew**")
 
                 result = create_planning_crew(
                     raw_idea=raw_idea,
                     skill_level=skill_level,
-                    verbose=verbose
+                    verbose=verbose,
+                    progress_callback=progress_callback
                 )
 
                 # Store results
@@ -65,22 +85,20 @@ def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: in
 
                 # Mark agents completed
                 mark_agent_completed("ConceptExpander")
-                update_progress("GoalsAnalyzer", 40)
                 mark_agent_completed("GoalsAnalyzer")
-                update_progress("FrameworkSelector", 70)
                 mark_agent_completed("FrameworkSelector")
-                update_progress("FrameworkSelector", 100)
 
             elif phase == 3:
                 # Phase 3: Full plan with teaching (adds PhaseDesigner, TeacherAgent, EvaluatorAgent)
                 add_log("Running Phase 3: Full Plan Crew", "INFO")
-                update_progress("ConceptExpander", 5)
+                status_container.write("🔍 **Phase 3: Full Plan Crew**")
 
                 result = create_full_plan_crew(
                     raw_idea=raw_idea,
                     skill_level=skill_level,
                     verbose=verbose,
-                    max_iterations=max_iterations
+                    max_iterations=max_iterations,
+                    progress_callback=progress_callback
                 )
 
                 # Store results
@@ -94,28 +112,23 @@ def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: in
 
                 # Mark agents completed
                 mark_agent_completed("ConceptExpander")
-                update_progress("GoalsAnalyzer", 20)
                 mark_agent_completed("GoalsAnalyzer")
-                update_progress("FrameworkSelector", 35)
                 mark_agent_completed("FrameworkSelector")
-                update_progress("PhaseDesigner", 50)
                 mark_agent_completed("PhaseDesigner")
-                update_progress("TeacherAgent", 70)
                 mark_agent_completed("TeacherAgent")
-                update_progress("EvaluatorAgent", 90)
                 mark_agent_completed("EvaluatorAgent")
-                update_progress("EvaluatorAgent", 100)
 
             elif phase == 4:
                 # Phase 4: Complete pipeline with README (all 7 agents)
                 add_log("Running Phase 4: Complete Pipeline", "INFO")
-                update_progress("ConceptExpander", 5)
+                status_container.write("🔍 **Phase 4: Complete Pipeline**")
 
                 result = create_complete_pipeline(
                     raw_idea=raw_idea,
                     skill_level=skill_level,
                     verbose=verbose,
-                    max_iterations=max_iterations
+                    max_iterations=max_iterations,
+                    progress_callback=progress_callback
                 )
 
                 # Store results
@@ -131,19 +144,12 @@ def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: in
 
                 # Mark all agents completed
                 mark_agent_completed("ConceptExpander")
-                update_progress("GoalsAnalyzer", 15)
                 mark_agent_completed("GoalsAnalyzer")
-                update_progress("FrameworkSelector", 30)
                 mark_agent_completed("FrameworkSelector")
-                update_progress("PhaseDesigner", 45)
                 mark_agent_completed("PhaseDesigner")
-                update_progress("TeacherAgent", 60)
                 mark_agent_completed("TeacherAgent")
-                update_progress("EvaluatorAgent", 75)
                 mark_agent_completed("EvaluatorAgent")
-                update_progress("PRDWriter", 90)
                 mark_agent_completed("PRDWriter")
-                update_progress("PRDWriter", 100)
 
         # Store captured output
         st.session_state.captured_stdout = capture.get_stdout()
@@ -153,15 +159,44 @@ def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: in
         st.session_state.execution_completed = True
         st.session_state.end_time = datetime.now()
         add_log("Pipeline execution completed successfully", "INFO")
+        status_container.write("---")
+        status_container.success("🎉 **Pipeline completed successfully!**")
+        update_ui()
 
     except Exception as e:
         st.session_state.execution_error = str(e)
         st.session_state.end_time = datetime.now()
+        st.session_state.execution_completed = True  # Mark as completed even on error
         error_trace = traceback.format_exc()
         add_log(f"Pipeline execution failed: {str(e)}", "ERROR")
         add_log(f"Traceback: {error_trace}", "ERROR")
-        st.error(f"Error: {str(e)}")
-        st.error("See Logs & Debug page for details")
+        status_container.error(f"❌ **Error:** {str(e)}")
+        status_container.info("See Logs & Debug page for details")
+
+
+def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: int, verbose: bool):
+    """
+    Legacy wrapper for run_pipeline_with_ui_updates that doesn't require UI containers.
+    Used for backwards compatibility or CLI execution.
+
+    Args:
+        raw_idea: The user's project idea
+        skill_level: Skill level (beginner/intermediate/advanced)
+        phase: Which phase to run (2, 3, or 4)
+        max_iterations: Maximum refinement iterations
+        verbose: Whether to show verbose output
+    """
+    # Create dummy containers
+    class DummyContainer:
+        def write(self, text): pass
+        def info(self, text): pass
+        def success(self, text): pass
+        def error(self, text): pass
+        def progress(self, value): pass
+
+    dummy = DummyContainer()
+    run_pipeline_with_ui_updates(raw_idea, skill_level, phase, max_iterations, verbose,
+                                  dummy, dummy, dummy, dummy)
 
 
 def render():
@@ -170,6 +205,44 @@ def render():
     st.markdown('<p style="text-align: center; font-size: 1.2rem; color: #666;">Multi-Agent README Generator</p>', unsafe_allow_html=True)
 
     st.markdown("---")
+
+    # Check if we should start execution
+    if st.session_state.get("execution_should_start", False):
+        st.session_state.execution_should_start = False
+        st.session_state.execution_started = True
+
+        # Show loading UI with progress tracking
+        st.warning("⏳ Execution in progress... This may take 2-5 minutes.")
+
+        # Create containers for dynamic updates
+        agent_container = st.empty()
+        progress_bar = st.empty()
+        time_container = st.empty()
+        status_expander = st.expander("📋 Detailed Progress", expanded=True)
+
+        with status_expander:
+            status_container = st.container()
+
+        # Show initial state
+        agent_container.info(f"Current Agent: **{st.session_state.get('current_agent', 'Starting...')}**")
+        progress_bar.progress(0)
+        time_container.write(f"⏱️ Elapsed Time: 0s")
+
+        # Run the pipeline with progress updates
+        raw_idea = st.session_state.raw_idea
+        skill_level = st.session_state.skill_level
+        phase = st.session_state.phase
+        max_iterations = st.session_state.max_iterations
+        verbose = st.session_state.verbose
+
+        # Execute the pipeline with UI updates
+        run_pipeline_with_ui_updates(
+            raw_idea, skill_level, phase, max_iterations, verbose,
+            status_container, progress_bar, agent_container, time_container
+        )
+
+        # After completion, rerun to show results
+        st.rerun()
 
     # Check if execution is in progress
     if st.session_state.get("execution_started", False) and not st.session_state.get("execution_completed", False):
@@ -257,9 +330,10 @@ def render():
                 st.session_state.max_iterations = max_iterations
                 st.session_state.verbose = verbose
 
-                # Run the pipeline
-                with st.spinner("Running multi-agent pipeline... This may take 2-5 minutes."):
-                    run_pipeline(raw_idea, skill_level, phase, max_iterations, verbose)
+                # Set flag to start execution and reset state
+                st.session_state.execution_should_start = True
+                st.session_state.execution_started = False
+                st.session_state.execution_completed = False
                 st.rerun()
 
     # Results Section
