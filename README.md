@@ -315,4 +315,463 @@ Example:
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m src.orchestration.runner “Build a Streamlit teaching app for async APIs”
+python -m src.orchestration.runner "Build a Streamlit teaching app for async APIs"
+
+⸻
+
+	10.	DEVELOPER GUIDE: EXTENDING PROJECT FORGE
+
+⸻
+
+This section explains how to add new agents, tools, and capabilities to Project Forge.
+All code follows clear patterns that make extension straightforward.
+
+────────────────────────────────────────────
+ADDING A NEW AGENT
+────────────────────────────────────────────
+
+New agents follow the same structure as existing ones. Here's how to add one:
+
+1. CREATE AGENT FILE
+
+Create src/agents/your_agent_name_agent.py with this structure:
+
+"""
+YourAgentName - Brief description of what this agent does.
+
+Detailed explanation of the agent's role in the pipeline, its inputs,
+outputs, and key responsibilities.
+
+Teaching Note:
+    Explain why this agent exists and what users will learn from
+    understanding its implementation.
+"""
+
+from crewai import Agent, Task
+from typing import Dict, Any
+import json
+
+from ..models.project_models import YourDataModel
+
+
+def create_your_agent_name_agent() -> Agent:
+    """
+    Create the agent with specialized prompting.
+
+    Returns:
+        CrewAI Agent configured for your specific task
+
+    Teaching Note:
+        Explain the agent's approach and philosophy.
+    """
+    return Agent(
+        role="Your Agent's Role Title",
+        goal="Clear, specific goal this agent achieves",
+        backstory="""Detailed backstory that shapes the agent's behavior.
+        Include:
+        - The agent's expertise and background
+        - Its philosophy and approach
+        - What it prioritizes
+        - What it avoids
+        """,
+        allow_delegation=False,  # Usually False for specialized agents
+        verbose=True
+    )
+
+
+def create_your_agent_task(agent: Agent, input_data: Any) -> Task:
+    """
+    Create the task for this agent.
+
+    Args:
+        agent: The agent instance
+        input_data: Input data needed for the task
+
+    Returns:
+        CrewAI Task configured for execution
+    """
+    description = f"""
+Your detailed task description here.
+
+INPUT DATA:
+{input_data}
+
+YOUR TASK:
+- Clear bullet point instructions
+- Be specific about what the agent should do
+- Include output format requirements
+
+OUTPUT FORMAT (if structured):
+{{
+    "field1": "value",
+    "field2": "value"
+}}
+"""
+
+    return Task(
+        description=description,
+        expected_output="Clear description of expected output format",
+        agent=agent
+    )
+
+
+def parse_your_agent_result(result: str) -> YourDataModel:
+    """
+    Parse the agent's output into structured data.
+
+    Args:
+        result: Raw string output from the agent
+
+    Returns:
+        Structured data model
+
+    Teaching Note:
+        Always handle parsing errors gracefully with fallbacks.
+    """
+    try:
+        # Clean up potential markdown code blocks
+        clean_result = result.strip()
+        if clean_result.startswith("```"):
+            lines = clean_result.split("\n")
+            clean_result = "\n".join(lines[1:-1] if len(lines) > 2 else lines)
+
+        data = json.loads(clean_result)
+
+        return YourDataModel(**data)
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"Warning: Could not parse agent output: {e}")
+        # Return sensible fallback
+        return YourDataModel(...)
+
+
+2. ADD DATA MODEL (if needed)
+
+If your agent outputs new data structures, add them to src/models/project_models.py:
+
+@dataclass
+class YourDataModel:
+    """
+    Description of what this data represents.
+
+    Attributes:
+        field1: What this field means
+        field2: What this field means
+    """
+    field1: str
+    field2: List[str]
+    # Add appropriate fields
+
+
+3. WIRE INTO PIPELINE
+
+Update src/orchestration/crew_config.py to include your agent in the pipeline:
+
+from ..agents.your_agent_name_agent import (
+    create_your_agent_name_agent,
+    create_your_agent_task,
+    parse_your_agent_result
+)
+
+# In the appropriate crew creation function:
+def create_your_crew_variant(...):
+    # Create agent
+    your_agent = create_your_agent_name_agent()
+
+    # Create task with necessary inputs
+    your_task = create_your_agent_task(your_agent, input_data)
+
+    # Execute task (CrewAI handles this)
+    result = your_task.execute()
+
+    # Parse result
+    parsed = parse_your_agent_result(result)
+
+    return parsed
+
+
+4. UPDATE RUNNER (if adding a new pipeline variant)
+
+If your agent is part of a new execution mode, update runner.py to add
+a command-line option:
+
+parser.add_argument(
+    "--your-option",
+    action="store_true",
+    help="Enable your new feature"
+)
+
+
+────────────────────────────────────────────
+ADDING A NEW TOOL
+────────────────────────────────────────────
+
+Tools are utility functions that agents use. Add them to src/tools/:
+
+1. CREATE TOOL FILE
+
+Create src/tools/your_tool_name_tool.py:
+
+"""
+Description of what this tool does.
+
+Teaching Note:
+    Explain when and why to use this tool.
+"""
+
+from typing import Any, List
+from dataclasses import dataclass
+
+
+@dataclass
+class YourToolResult:
+    """Result structure from your tool."""
+    field1: Any
+    field2: Any
+
+
+def your_tool_function(input: Any) -> YourToolResult:
+    """
+    Main tool function.
+
+    Args:
+        input: What the function needs
+
+    Returns:
+        Structured result
+
+    Teaching Note:
+        Implementation details and design decisions.
+    """
+    # Implementation
+    pass
+
+
+2. USE IN AGENTS
+
+Import and use your tool in agent files:
+
+from ..tools.your_tool_name_tool import your_tool_function
+
+# In agent task or helper functions:
+result = your_tool_function(data)
+
+
+────────────────────────────────────────────
+ADDING NEW RUBRIC CRITERIA
+────────────────────────────────────────────
+
+To add new evaluation criteria:
+
+1. ADD TO ENUM (src/tools/rubric_tool.py):
+
+class RubricCriterion(Enum):
+    # ... existing criteria ...
+    YOUR_NEW_CRITERION = "your_criterion_name"
+
+
+2. CREATE RUBRIC FUNCTION:
+
+def create_your_criterion_rubric() -> Dict[str, Any]:
+    """
+    Define your new evaluation rubric.
+
+    Returns:
+        Dict with rubric criteria and scoring guidelines
+    """
+    return {
+        "name": "Your Criterion Name",
+        "description": "What this criterion measures",
+        "score_levels": {
+            10: "Perfect - detailed description",
+            8: "Very good - what this looks like",
+            6: "Acceptable - minimum quality",
+            4: "Needs work - what's missing",
+            2: "Poor - significant problems",
+            0: "Failing - completely inadequate"
+        },
+        "pass_threshold": 7  # Adjust based on importance
+    }
+
+
+3. ADD EVALUATION FUNCTION:
+
+def evaluate_your_criterion(plan: Any, context: str = "default") -> RubricScore:
+    """
+    Evaluate the plan against your criterion.
+
+    Args:
+        plan: ProjectPlan to evaluate
+        context: Additional context for evaluation
+
+    Returns:
+        RubricScore with score and feedback
+    """
+    score = 10
+    feedback_points = []
+
+    # Your evaluation logic
+    # Deduct points for issues, add to feedback_points
+
+    feedback = " | ".join(feedback_points) if feedback_points else "Meets criterion"
+
+    return RubricScore(
+        criterion=RubricCriterion.YOUR_NEW_CRITERION,
+        score=max(0, score),
+        feedback=feedback,
+        pass_threshold=7
+    )
+
+
+4. USE IN EVALUATOR (src/agents/evaluator_agent.py):
+
+from ..tools.rubric_tool import evaluate_your_criterion
+
+# In evaluate_plan_quality():
+your_score = evaluate_your_criterion(plan, context)
+scores[RubricCriterion.YOUR_NEW_CRITERION] = your_score
+
+if not your_score.passes():
+    critical_issues.append(f"Your criterion failed: {your_score.feedback}")
+
+
+────────────────────────────────────────────
+ADDING CONFIGURATION OPTIONS
+────────────────────────────────────────────
+
+New configuration should go in src/config/defaults.yaml:
+
+1. ADD TO YAML:
+
+your_new_section:
+  option1: value1
+  option2: value2
+  subsection:
+    nested_option: value
+
+
+2. USE IN CODE:
+
+import yaml
+from pathlib import Path
+
+def load_your_config() -> Dict[str, Any]:
+    config_path = Path(__file__).parent / "config" / "defaults.yaml"
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    return config.get("your_new_section", {})
+
+
+────────────────────────────────────────────
+TESTING YOUR ADDITIONS
+────────────────────────────────────────────
+
+1. UNIT TESTS
+
+Create tests/test_your_component.py:
+
+import pytest
+from project_forge.src.agents.your_agent import create_your_agent
+# ... imports
+
+def test_your_agent_creation():
+    """Test that agent can be created."""
+    agent = create_your_agent()
+    assert agent is not None
+    assert agent.role == "Expected Role"
+
+
+def test_your_tool_function():
+    """Test your tool with known inputs."""
+    result = your_tool_function(test_input)
+    assert result.field1 == expected_value
+
+
+2. INTEGRATION TESTS
+
+Test your agent in the full pipeline:
+
+def test_your_agent_in_pipeline():
+    """Test agent works in complete workflow."""
+    # Set up test data
+    # Run pipeline with your agent
+    # Verify output
+
+
+────────────────────────────────────────────
+BEST PRACTICES
+────────────────────────────────────────────
+
+1. DOCUMENTATION
+   - Every module needs a detailed docstring
+   - Every function needs args/returns documentation
+   - Add "Teaching Note" sections explaining design decisions
+
+2. ERROR HANDLING
+   - Always handle JSON parsing errors
+   - Provide sensible fallbacks
+   - Log warnings, don't crash
+
+3. PROMPT ENGINEERING
+   - Be specific about output format
+   - Include examples in prompts (few-shot)
+   - Request JSON for structured outputs
+   - Clean markdown code blocks from responses
+
+4. CONFIGURATION
+   - Keep magic numbers in defaults.yaml
+   - Don't hardcode thresholds in code
+   - Make behavior tunable without code changes
+
+5. CONSISTENCY
+   - Follow existing naming conventions
+   - Use the same patterns as other agents
+   - Keep file structure parallel
+
+────────────────────────────────────────────
+COMMON PATTERNS
+────────────────────────────────────────────
+
+AGENT CREATION:
+    create_agent() -> returns Agent
+    create_task(agent, inputs) -> returns Task
+    parse_result(result) -> returns DataModel
+
+TOOL CREATION:
+    tool_function(input) -> returns ToolResult
+    Always include validation and error handling
+
+EVALUATION:
+    evaluate_criterion(target) -> returns RubricScore
+    Use score 0-10 with pass_threshold
+
+DATA FLOW:
+    runner.py → crew_config.py → agents → tools → models
+
+────────────────────────────────────────────
+EXAMPLE: ADDING A PERFORMANCE OPTIMIZER AGENT
+────────────────────────────────────────────
+
+Here's a complete example of adding an agent that optimizes plans for performance:
+
+1. Create src/agents/performance_optimizer_agent.py
+2. Add PerformanceOptimization dataclass to project_models.py
+3. Add optimize_for_performance() function to crew_config.py
+4. Add --optimize flag to runner.py
+5. Test with performance-critical projects
+
+Follow the patterns above for implementation details.
+
+────────────────────────────────────────────
+RESOURCES
+────────────────────────────────────────────
+
+- CrewAI Documentation: https://docs.crewai.com/
+- OpenAI API: https://platform.openai.com/docs/
+- Project Forge codebase: Read existing agents as examples
+- Phase 1-5 implementation: Shows patterns in practice
+
+⸻
+
+REMEMBER: This is a teaching project. Code should be clear, well-documented,
+and demonstrate best practices. Favor readability and maintainability over
+cleverness.
