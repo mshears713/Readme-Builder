@@ -16,7 +16,7 @@ fi
 # Check if .env file exists
 if [ ! -f .env ]; then
     echo "⚠️  Warning: .env file not found"
-    echo "Please create a .env file with your ANTHROPIC_API_KEY"
+    echo "Please create a .env file with your OPENAI_API_KEY"
     echo ""
 fi
 

@@ -11,9 +11,9 @@ REM Check if .env file exists
 if not exist .env (
     echo WARNING: .env file not found!
     echo.
-    echo Please create a .env file with your API keys:
+    echo Please create a .env file with your API key:
     echo 1. Copy .env.example to .env
-    echo 2. Add your OPENAI_API_KEY or ANTHROPIC_API_KEY
+    echo 2. Add your OPENAI_API_KEY
     echo.
     pause
     exit /b 1
