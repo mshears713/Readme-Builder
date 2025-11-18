@@ -315,11 +315,15 @@ def design_phases(
         >>> print(f"Created {len(phases)} phases with {sum(len(p.steps) for p in phases)} total steps")
         Created 5 phases with 50 total steps
     """
+    from crewai import Crew
+
     agent = create_phase_designer_agent()
     task = create_phase_design_task(agent, idea, goals, framework, skill_level)
 
-    # Execute the task
-    result = task.execute()
+    # Execute the task through a Crew
+    crew = Crew(agents=[agent], tasks=[task], verbose=True)
+    output = crew.kickoff()
+    result = output.raw
 
     # Parse into Phase objects
     phases = parse_phase_design_result(result)

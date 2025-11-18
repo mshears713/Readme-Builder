@@ -156,7 +156,11 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
 
     concept_agent = create_concept_expander_agent()
     concept_task = create_concept_expansion_task(concept_agent, raw_idea, skill_level)
-    concept_result = concept_task.execute()
+
+    # Execute task through a Crew
+    concept_crew = Crew(agents=[concept_agent], tasks=[concept_task], verbose=verbose)
+    concept_output = concept_crew.kickoff()
+    concept_result = concept_output.raw
 
     # Parse into ProjectIdea
     project_idea = parse_concept_expansion_result(concept_result, raw_idea)
@@ -182,7 +186,11 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
 
     goals_agent = create_goals_analyzer_agent()
     goals_task = create_goals_analysis_task(goals_agent, project_idea, skill_level)
-    goals_result = goals_task.execute()
+
+    # Execute task through a Crew
+    goals_crew = Crew(agents=[goals_agent], tasks=[goals_task], verbose=verbose)
+    goals_output = goals_crew.kickoff()
+    goals_result = goals_output.raw
 
     # Parse into ProjectGoals
     project_goals = parse_goals_analysis_result(goals_result)
@@ -212,7 +220,11 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
         project_goals,
         skill_level
     )
-    framework_result = framework_task.execute()
+
+    # Execute task through a Crew
+    framework_crew = Crew(agents=[framework_agent], tasks=[framework_task], verbose=verbose)
+    framework_output = framework_crew.kickoff()
+    framework_result = framework_output.raw
 
     # Parse into FrameworkChoice
     framework_choice = parse_framework_selection_result(framework_result)
@@ -341,7 +353,11 @@ def create_full_plan_crew(
             planning_result.framework_choice,
             skill_level
         )
-        phase_result = phase_task.execute()
+
+        # Execute task through a Crew
+        phase_crew = Crew(agents=[phase_designer], tasks=[phase_task], verbose=verbose)
+        phase_output = phase_crew.kickoff()
+        phase_result = phase_output.raw
 
         # Parse into Phase objects
         phases = parse_phase_design_result(phase_result)
@@ -366,7 +382,11 @@ def create_full_plan_crew(
             planning_result.project_goals,
             skill_level
         )
-        teaching_result = teaching_task.execute()
+
+        # Execute task through a Crew
+        teaching_crew = Crew(agents=[teacher], tasks=[teaching_task], verbose=verbose)
+        teaching_output = teaching_crew.kickoff()
+        teaching_result = teaching_output.raw
 
         # Parse enriched phases
         enriched_phases, global_teaching_notes = parse_teaching_enrichment_result(
@@ -489,42 +509,21 @@ def create_complete_pipeline(
         progress_callback("PRDWriter", 90, "📄 Generating README/PRD...")
 
     import logging
-    import signal
-    from contextlib import contextmanager
 
     logger = logging.getLogger("project_forge")
-
-    @contextmanager
-    def timeout_handler(seconds):
-        """Context manager for timeout handling."""
-        def timeout_signal_handler(signum, frame):
-            raise TimeoutError(f"Task execution exceeded {seconds} seconds")
-
-        # Set the signal handler and alarm
-        old_handler = signal.signal(signal.SIGALRM, timeout_signal_handler)
-        signal.alarm(seconds)
-        try:
-            yield
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
 
     prd_writer = create_prd_writer_agent()
     prd_task = create_prd_writing_task(prd_writer, plan_result.project_plan)
 
     try:
         logger.info("Starting PRD writer task execution...")
-        # Add 10 minute timeout for PRD writer (it can take a while with large plans)
-        with timeout_handler(600):
-            prd_result = prd_task.execute()
+
+        # Execute task through a Crew
+        prd_crew = Crew(agents=[prd_writer], tasks=[prd_task], verbose=verbose)
+        prd_output = prd_crew.kickoff()
+        prd_result = prd_output.raw
+
         logger.info("PRD writer task completed successfully")
-    except TimeoutError as e:
-        logger.error(f"PRD writer timed out: {e}")
-        raise TimeoutError(
-            "README generation timed out after 10 minutes. "
-            "This may indicate an issue with the LLM API or the task complexity. "
-            "Try reducing max_iterations or simplifying your project idea."
-        )
     except Exception as e:
         logger.error(f"PRD writer failed with error: {e}")
         raise

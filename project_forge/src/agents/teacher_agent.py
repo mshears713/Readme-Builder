@@ -313,11 +313,15 @@ def enrich_with_teaching(
         >>> print(enriched_phases[0].steps[0].teaching_guidance)
         "Add inline comments explaining the project structure and include a README section with package organization diagram..."
     """
+    from crewai import Crew
+
     agent = create_teacher_agent()
     task = create_teaching_enrichment_task(agent, phases, goals, skill_level)
 
-    # Execute the task
-    result = task.execute()
+    # Execute the task through a Crew
+    crew = Crew(agents=[agent], tasks=[task], verbose=True)
+    output = crew.kickoff()
+    result = output.raw
 
     # Parse and merge teaching guidance
     enriched_phases, global_notes = parse_teaching_enrichment_result(result, phases)

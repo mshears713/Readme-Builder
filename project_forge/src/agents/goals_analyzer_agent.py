@@ -226,11 +226,15 @@ def analyze_goals(project_idea: ProjectIdea, skill_level: str = "intermediate") 
         >>> print(goals.learning_goals)
         ['Understand async/await patterns', 'Practice API design']
     """
+    from crewai import Crew
+
     agent = create_goals_analyzer_agent()
     task = create_goals_analysis_task(agent, project_idea, skill_level)
 
-    # Execute the task
-    result = task.execute()
+    # Execute the task through a Crew
+    crew = Crew(agents=[agent], tasks=[task], verbose=True)
+    output = crew.kickoff()
+    result = output.raw
 
     # Parse into ProjectGoals
     project_goals = parse_goals_analysis_result(result)
