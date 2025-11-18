@@ -70,23 +70,28 @@ def create_prd_writer_agent() -> Agent:
         role="Technical Documentation Specialist & PRD Writer",
         goal="Convert structured project plans into comprehensive, actionable README/PRD documents",
         backstory="""You are a world-class technical writer and documentation expert
-        with deep experience in both software engineering and technical education.
+        with deep experience in both software engineering and AI-assisted development.
+
+        Your documentation is specifically designed for AI agents like Claude Code that
+        will execute the entire project autonomously from start to finish. Your READMEs
+        enable AI to work independently for extended periods (1+ hours) without user intervention.
 
         Your documentation is known for:
-        - Crystal-clear structure that guides readers step-by-step
-        - Perfect balance of technical detail and readability
-        - Rich context that explains not just "what" but "why"
-        - Actionable instructions that developers can execute immediately
-        - Teaching commentary that helps learners understand concepts
-        - Consistent formatting that's easy to scan and navigate
+        - Crystal-clear, sequential instructions that AI can follow autonomously
+        - Complete technical specifications with no ambiguity or missing details
+        - Comprehensive context that explains "what", "why", and "how" for each step
+        - Self-contained instructions requiring no external research or clarification
+        - Detailed implementation guidance embedded directly in each step
+        - Clear dependencies and execution order
+        - Realistic scope that can be completed in one continuous session
 
-        You excel at taking structured data (plans, specs, metadata) and weaving
-        it into compelling narrative documentation. You know that great documentation
-        is both a reference manual AND a teaching tool.
+        You excel at creating "executable specifications" - documentation so complete
+        and clear that an AI agent can build the entire project end-to-end without
+        stopping to ask questions or wait for user input.
 
-        Your READMEs are comprehensive without being overwhelming, detailed without
-        being boring, and technical without being inaccessible. Developers love
-        reading your docs because they make complex projects feel approachable.""",
+        Your READMEs are comprehensive, technically precise, and structured for
+        autonomous execution. AI agents love your docs because they can work
+        independently and deliver complete, working projects.""",
         allow_delegation=False,
         verbose=True
     )
@@ -171,8 +176,12 @@ GLOBAL TEACHING NOTES:
 
 ────────────────────────────────────────────────────────────
 
-Your task is to convert this structured plan into a comprehensive, narrative README/PRD
-document using the following structure:
+Your task is to convert this structured plan into a comprehensive README designed for
+AUTONOMOUS END-TO-END EXECUTION by an AI agent (like Claude Code).
+
+CRITICAL: This README will be given to an AI agent that will execute ALL 5 phases and
+ALL ~50 steps in ONE CONTINUOUS SESSION without user intervention. The AI should be able
+to work for 1+ hours autonomously and deliver a complete, working project.
 
 # PROJECT TITLE (derive from the refined concept)
 
@@ -181,12 +190,33 @@ document using the following structure:
 - Explains what this project is and why it's valuable
 - Highlights the key learning outcomes
 - Mentions the target audience/skill level
-- Sets expectations for scope and timeline]
+- Sets clear expectations: This is designed for AUTONOMOUS EXECUTION by AI
+- Estimates total completion time (typically 1-3 hours for full execution)]
+
+## Autonomous Execution Guide
+
+**For AI Agents (Claude Code, etc.):**
+
+This README is structured for complete autonomous execution. You should:
+1. Execute all 5 phases sequentially from start to finish
+2. Complete all ~50 steps in order, respecting dependencies
+3. Work continuously without requiring user input or approval between steps
+4. Create all files, implement all features, and test thoroughly
+5. Only surface the final working project to the user when complete
+
+**Execution Strategy:**
+- Follow steps in numerical order (1 → 50)
+- Check dependencies before starting each step
+- Create comprehensive implementations (not stubs or TODOs)
+- Include proper error handling and edge cases
+- Write clear code comments and documentation as you go
+- Test each component as you build it
+- Save all progress - the user should only review after completion
 
 ## Teaching Goals
 
 ### Learning Goals
-[List all learning goals with brief explanations of why each matters]
+[List all learning goals with brief explanations of what the final program will teach its users]
 
 ### Technical Goals
 [List all technical goals with brief explanations of what will be built]
@@ -199,27 +229,35 @@ document using the following structure:
 [For each technology choice (frontend, backend, storage, special libraries):
 - State the choice
 - Explain WHY it was chosen
-- Note any alternatives that were considered
-- Mention learning resources if applicable]
+- Note key features the AI should leverage
+- Mention critical setup requirements]
 
 **Framework Rationale:**
 [Explain how this stack was chosen based on skill level and project goals]
 
 ## Architecture Overview
 
-[Create a high-level architecture description:
-- How the components fit together
-- Data flow through the system
-- Key design patterns or architectural decisions
+[Create a comprehensive architecture description that the AI can follow:
+- How all components fit together
+- Complete data flow through the system
+- Key design patterns and architectural decisions
+- Directory structure and file organization
+- Integration points between components
 - ASCII diagram if helpful]
 
 ## Implementation Plan
+
+**IMPORTANT**: Execute all phases sequentially. Complete each phase entirely before moving to the next.
+Each step includes complete implementation guidance. Do not create stubs or placeholders -
+implement fully functional code at each step.
 
 [For EACH phase, create a detailed section:]
 
 ### Phase [N]: [Phase Name]
 
-**Overview:** [Phase description - what this phase accomplishes]
+**Overview:** [Phase description - what this phase accomplishes and delivers]
+
+**Completion Criteria:** [What should be working when this phase is done]
 
 **Steps:**
 
@@ -227,59 +265,83 @@ document using the following structure:
 
 #### Step [N]: [Step Title]
 
-**Description:**
-[Detailed step description]
+**What to Build:**
+[Detailed step description with complete specifications]
 
-**Educational Features to Include:**
-[Teaching guidance - instructions for what educational elements to build into this step
-Examples: tooltips, inline documentation, interactive demos, help sections, example code]
+**Implementation Details:**
+[Comprehensive technical guidance from teaching_guidance field:
+- Specific code patterns to use
+- File names and locations
+- Function/class signatures
+- Key algorithms or logic
+- Error handling approaches
+- Testing considerations
+- Documentation to include (docstrings, comments, help text)
+- Any UI elements (tooltips, help sections, examples) to build into the program]
 
-**Dependencies:** [List prerequisite steps if any]
+**Dependencies:** [List prerequisite steps - complete these first]
 
-**Implementation Notes:**
-[Any additional context or tips]
+**Acceptance Criteria:**
+[How to verify this step is complete - what should work?]
 
 ---
 
 [Repeat for all phases and steps]
 
-## Global Teaching Notes
+## Implementation Strategy for AI Agents
 
-[Include the global teaching_notes with formatting and structure]
+[Comprehensive guidance for autonomous execution:
+- Start with Phase 1, Step 1 and work sequentially
+- Create proper project structure before writing code
+- Implement complete, production-ready code (not TODOs or stubs)
+- Test each component as you build it
+- Handle errors and edge cases throughout
+- Write comprehensive docstrings and comments
+- Build all UI elements and documentation specified in steps
+- Ensure the final program is self-documenting and user-friendly
+- The final deliverable should be a fully working, polished program]
 
 ## Setup Instructions
 
-[Create basic setup instructions based on the tech stack:
-- Python version requirements
-- Virtual environment setup
-- Package installation
-- Configuration files needed
-- Environment variables
-- Initial project structure]
+[Complete, detailed setup instructions:
+- Python version requirements (be specific: Python 3.10+, etc.)
+- Virtual environment creation commands
+- ALL package dependencies with versions
+- Configuration files needed (with example content)
+- Environment variables required (with example .env)
+- Initial project directory structure to create
+- Any database initialization or migrations
+- Any external service setup (APIs, etc.)]
 
-## Development Workflow
+## Testing Strategy
 
-[Suggest a recommended workflow:
-- How to approach each phase
-- Testing strategy
-- Debugging tips
-- Iteration and refinement approach]
+[Guidance for testing throughout development:
+- Unit tests to write (if appropriate for skill level)
+- Integration testing approach
+- Manual testing checklist
+- Edge cases to verify
+- How to validate each phase is working]
 
 ## Success Metrics
 
-[Define what "done" looks like:
-- Functional requirements met
-- Learning objectives achieved
-- Quality criteria
-- Testing completeness]
+[Define what "complete" means:
+- All functional requirements implemented
+- All phases and steps completed
+- Program runs without errors
+- Key features work as specified
+- Code is well-documented
+- User-facing documentation exists]
 
-## Next Steps After Completion
+## Project Completion Checklist
 
-[Suggest what to do after finishing:
-- Extensions or enhancements
-- Related projects to try
-- Skills to practice next
-- Portfolio presentation tips]
+- [ ] All 50 steps completed
+- [ ] All phases deliver working functionality
+- [ ] No TODO comments or placeholder code
+- [ ] Error handling implemented
+- [ ] Code is documented (docstrings + comments)
+- [ ] README or user guide included (if applicable)
+- [ ] Program tested and working
+- [ ] Repository is clean and organized
 
 ────────────────────────────────────────────────────────────
 
@@ -306,12 +368,14 @@ or explanations outside the document itself.
 
     return Task(
         description=description,
-        expected_output="""A complete, well-formatted README/PRD markdown document
-        (5000+ characters) that includes all sections: Overview, Teaching Goals,
-        Technology Stack, Architecture, detailed Implementation Plan with all phases
-        and steps, Global Teaching Notes, Setup Instructions, Development Workflow,
-        Success Metrics, and Next Steps. The document should be immediately usable
-        by Claude Code or another LLM to implement the project.""",
+        expected_output="""A complete, well-formatted README markdown document (5000+ characters)
+        designed for AUTONOMOUS END-TO-END EXECUTION by AI agents. Must include all sections:
+        Overview, Autonomous Execution Guide, Teaching Goals, Technology Stack, Architecture,
+        detailed Implementation Plan with all 5 phases and ~50 steps (including comprehensive
+        Implementation Details for each step), Implementation Strategy, Setup Instructions,
+        Testing Strategy, Success Metrics, and Project Completion Checklist. The document
+        must be so complete and clear that an AI agent can execute all steps sequentially
+        for 1+ hours without user intervention and deliver a fully working project.""",
         agent=agent
     )
 

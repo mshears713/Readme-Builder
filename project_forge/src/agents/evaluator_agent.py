@@ -1,25 +1,27 @@
 """
-EvaluatorAgent - Quality control and validation for project plans.
+EvaluatorAgent - Quality control and validation for autonomous AI execution.
 
-This agent evaluates ProjectPlans against quality criteria (clarity, feasibility,
-teaching value, balance) and decides whether to approve or request revisions.
-It acts as a quality gate before final README generation.
+This agent evaluates ProjectPlans against quality criteria specifically for
+AUTONOMOUS AI EXECUTION. It ensures plans are clear, comprehensive, and
+executable by AI agents without user intervention.
 
 Key responsibilities:
-- Evaluate plan quality using rubrics (clarity, feasibility, teaching value, balance)
+- Evaluate plan quality for autonomous executability
+- Check for ambiguous language requiring clarification
+- Verify implementation guidance is comprehensive and specific
 - Run consistency checks (phase counts, step numbering, dependencies)
+- Ensure plans enable 1+ hours of continuous AI work
 - Decide whether to approve or request refinements
 - Provide specific, actionable feedback for improvements
-- Support multiple evaluation modes (concept, goals, full plan)
 
 The output is approval/rejection with detailed feedback that can guide
 PhaseDesignerAgent or TeacherAgent in refinement iterations.
 
 Teaching Note:
     This agent implements the "evaluation loop" pattern common in multi-agent
-    systems. Rather than blindly accepting the first output, we evaluate and
-    iterate until quality thresholds are met. This dramatically improves the
-    quality of generated plans.
+    systems. It ensures plans are not just well-structured, but specifically
+    executable by AI agents autonomously. We evaluate and iterate until quality
+    thresholds are met AND autonomous executability is verified.
 
     In production systems, you'd typically limit iterations to avoid infinite
     loops and API cost blowout. We use a simple max_iterations approach.
@@ -84,37 +86,42 @@ def create_evaluator_agent() -> Agent:
         role="Project Plan Evaluator and Quality Assurance",
         goal="Ensure project plans meet quality standards for clarity, feasibility, teaching value, and structural integrity",
         backstory="""You are an expert technical reviewer and quality assurance
-        specialist with decades of experience evaluating project plans and
-        educational materials.
+        specialist with decades of experience evaluating project plans for
+        AUTONOMOUS AI EXECUTION.
 
         Your expertise includes:
-        - Assessing project scope and feasibility
-        - Evaluating learning design and pedagogical quality
-        - Identifying structural problems and inconsistencies
+        - Assessing project scope and feasibility for AI agents
+        - Evaluating whether plans are clear enough for autonomous execution
+        - Identifying ambiguity that would require user clarification
+        - Verifying implementation guidance is comprehensive and specific
+        - Ensuring plans enable 1+ hours of continuous AI work
         - Providing constructive, actionable feedback
         - Balancing high standards with pragmatism
 
-        Your evaluation philosophy:
-        - Quality matters more than speed
-        - Specific feedback is more valuable than general criticism
-        - Plans should be realistic and achievable
-        - Learning value should be explicit and clear
-        - Structure should be consistent and logical
-        - Better to iterate than to ship subpar work
+        Your evaluation philosophy for autonomous execution:
+        - Plans must be executable without user intervention
+        - Every step must be clear, specific, and unambiguous
+        - Implementation guidance must be comprehensive, not minimal
+        - No step should require external research or clarification
+        - Plans should enable AI agents to work independently for extended periods
+        - Better to iterate until autonomously executable than to ship ambiguous plans
 
         When you evaluate, you:
-        - Look for concrete, actionable issues
+        - Check for ambiguous language ("if needed", "consider", "optionally")
+        - Verify steps have sufficient detail for autonomous implementation
+        - Ensure teaching_guidance provides technical details, not just suggestions
+        - Look for gaps that would require the AI to stop and ask questions
         - Distinguish between critical problems and minor suggestions
         - Provide specific examples of what needs improvement
-        - Consider the user's skill level and constraints
-        - Focus on whether the plan will actually work in practice
+        - Consider whether the plan is completable in one continuous session
 
         You DO NOT:
+        - Approve plans with vague or ambiguous steps
+        - Accept plans requiring external research or clarification
+        - Overlook missing implementation details in teaching_guidance
+        - Approve plans that require user input mid-execution
         - Reject plans for arbitrary or subjective reasons
-        - Request changes without clear justification
-        - Focus on superficial issues while missing structural problems
-        - Provide vague feedback like "make it better"
-        - Approve clearly broken or unrealistic plans""",
+        - Provide vague feedback like "make it better"""
         allow_delegation=False,
         verbose=True
     )
@@ -240,6 +247,35 @@ def evaluate_plan_quality(
     if not plan.teaching_notes or len(plan.teaching_notes.strip()) < 50:
         suggestions.append("Global teaching notes are missing or too brief")
 
+    # Phase 5 Enhancement: Check for autonomous executability
+    ambiguous_phrases = ["if needed", "consider", "optionally", "you may", "if desired",
+                        "feel free to", "think about", "research", "look into"]
+    ambiguous_steps = []
+
+    for phase in plan.phases:
+        for step in phase.steps:
+            # Check step titles and descriptions for ambiguous language
+            step_text = (step.title + " " + step.description).lower()
+            found_phrases = [phrase for phrase in ambiguous_phrases if phrase in step_text]
+            if found_phrases:
+                ambiguous_steps.append(f"Step {step.index} contains ambiguous language: {', '.join(found_phrases)}")
+
+            # Check that teaching_guidance is present and substantial
+            if not step.teaching_guidance or len(step.teaching_guidance.strip()) < 30:
+                critical_issues.append(
+                    f"Step {step.index} lacks comprehensive implementation guidance (teaching_guidance too brief or missing)"
+                )
+
+    if ambiguous_steps:
+        if len(ambiguous_steps) > 5:
+            critical_issues.append(
+                f"Multiple steps ({len(ambiguous_steps)}) contain ambiguous language that requires clarification. "
+                f"For autonomous execution, steps must be decisive and specific."
+            )
+        else:
+            for ambiguous_step in ambiguous_steps:
+                suggestions.append(f"Autonomous execution concern: {ambiguous_step}")
+
     # Overall approval decision
     approved = len(critical_issues) == 0 and all(score.passes() for score in scores.values())
 
@@ -334,49 +370,57 @@ SAMPLE STEPS:
                 plan_summary += f"     Educational Guidance: {step.teaching_guidance[:100]}...\n"
 
     description = f"""
-Evaluate this project plan for quality and learning value.
+Evaluate this project plan for AUTONOMOUS AI EXECUTION.
+
+CRITICAL: This plan will be executed by an AI agent (like Claude Code) that must complete
+all steps in ONE CONTINUOUS SESSION without user intervention. Evaluate whether the plan
+enables 1+ hours of autonomous work.
 
 {plan_summary}
 
 EVALUATION CRITERIA:
 
 1. CLARITY (0-10):
-   - Are steps clear and specific?
-   - Is the progression logical?
-   - Are instructions actionable?
+   - Are steps clear, specific, and unambiguous?
+   - Is the progression logical and sequential?
+   - Are instructions actionable without clarification?
+   - Is there any ambiguous language requiring user input?
 
 2. FEASIBILITY (0-10):
-   - Is the scope realistic for {skill_level} users?
-   - Are step sizes appropriate (30-90 min each)?
-   - Are dependencies reasonable?
+   - Is the scope realistic for autonomous completion in one session?
+   - Are step sizes appropriate (30-90 min each) for an AI agent?
+   - Are dependencies reasonable and explicit?
+   - Can the plan be completed in 1-3 hours of continuous work?
 
-3. TEACHING VALUE (0-10):
-   - Are learning objectives clear?
-   - Do teaching annotations add value?
-   - Is the learning arc progressive?
+3. AUTONOMOUS EXECUTABILITY (0-10):
+   - Does each step have sufficient detail for autonomous implementation?
+   - Is teaching_guidance comprehensive with technical specifics?
+   - Are there any steps requiring external research or clarification?
+   - Can an AI work for 1+ hours without stopping to ask questions?
 
 4. BALANCE (0-10):
    - Are phases roughly equal in size?
-   - Is difficulty well-distributed?
-   - Are there clear milestones?
+   - Is difficulty well-distributed across phases?
+   - Are there clear milestones and deliverables?
 
 OUTPUT FORMAT (JSON):
 {{
     "clarity_score": 0-10,
-    "clarity_feedback": "Specific observations...",
+    "clarity_feedback": "Specific observations about clarity for AI execution...",
     "feasibility_score": 0-10,
-    "feasibility_feedback": "Specific observations...",
-    "teaching_score": 0-10,
-    "teaching_feedback": "Specific observations...",
+    "feasibility_feedback": "Specific observations about autonomous completion...",
+    "executability_score": 0-10,
+    "executability_feedback": "Specific observations about autonomous executability...",
     "balance_score": 0-10,
     "balance_feedback": "Specific observations...",
     "approved": true/false,
     "critical_issues": ["issue1", "issue2"],
     "suggestions": ["suggestion1", "suggestion2"],
-    "summary": "Overall evaluation summary..."
+    "summary": "Overall evaluation summary for autonomous AI execution..."
 }}
 
-Be specific and constructive. Identify real problems, not nitpicks.
+Be specific and constructive. Focus on whether an AI can execute this autonomously.
+Identify real problems that would block autonomous execution, not nitpicks.
 """
 
     return Task(
