@@ -12,11 +12,20 @@ import streamlit as st
 from datetime import datetime
 import traceback
 from streamlit_ui.utils import (
-    reset_execution_state, add_log, update_progress,
-    mark_agent_completed, get_elapsed_time, CaptureOutput,
-    display_project_idea, display_project_goals,
-    display_framework_choice, display_phases,
-    display_evaluation_result, display_readme_preview
+    reset_execution_state,
+    add_log,
+    update_progress,
+    mark_agent_completed,
+    get_elapsed_time,
+    CaptureOutput,
+    display_project_idea,
+    display_project_goals,
+    display_framework_choice,
+    display_phases,
+    display_evaluation_result,
+    display_readme_preview,
+    prepare_new_run_state,
+    cleanup_asyncio_tasks,
 )
 
 
@@ -44,8 +53,7 @@ def run_pipeline_with_ui_updates(raw_idea: str, skill_level: str, phase: int, ma
             create_complete_pipeline
         )
 
-        st.session_state.execution_started = True
-        st.session_state.start_time = datetime.now()
+        st.session_state.start_time = st.session_state.start_time or datetime.now()
         add_log(f"Starting Phase {phase} pipeline for: {raw_idea[:50]}...", "INFO")
 
         def update_ui():
@@ -172,6 +180,10 @@ def run_pipeline_with_ui_updates(raw_idea: str, skill_level: str, phase: int, ma
         add_log(f"Traceback: {error_trace}", "ERROR")
         status_container.error(f"❌ **Error:** {str(e)}")
         status_container.info("See Logs & Debug page for details")
+    finally:
+        cancelled = cleanup_asyncio_tasks()
+        if cancelled:
+            add_log(f"Cleaned up {cancelled} pending asyncio task(s)", "DEBUG")
 
 
 def run_pipeline(raw_idea: str, skill_level: str, phase: int, max_iterations: int, verbose: bool):
@@ -209,7 +221,7 @@ def render():
     # Check if we should start execution
     if st.session_state.get("execution_should_start", False):
         st.session_state.execution_should_start = False
-        st.session_state.execution_started = True
+        prepare_new_run_state()
 
         # Show loading UI with progress tracking
         st.warning("⏳ Execution in progress... This may take 2-5 minutes.")
@@ -226,7 +238,7 @@ def render():
         # Show initial state
         agent_container.info(f"Current Agent: **{st.session_state.get('current_agent', 'Starting...')}**")
         progress_bar.progress(0)
-        time_container.write(f"⏱️ Elapsed Time: 0s")
+        time_container.write("⏱️ Elapsed Time: 0s")
 
         # Run the pipeline with progress updates
         raw_idea = st.session_state.raw_idea
@@ -316,7 +328,7 @@ def render():
             reset = st.form_submit_button("🔄 Reset", use_container_width=True)
 
         if reset:
-            reset_execution_state()
+            reset_execution_state(full_reset=True)
             st.rerun()
 
         if submit:
@@ -391,7 +403,7 @@ def render():
         col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
             if st.button("🔄 New Project", use_container_width=True):
-                reset_execution_state()
+                reset_execution_state(full_reset=True)
                 st.rerun()
         with col2:
             if st.session_state.get("readme_content"):
@@ -411,5 +423,5 @@ def render():
         st.info("Check the **Logs & Debug** page for detailed error information.")
 
         if st.button("🔄 Try Again"):
-            reset_execution_state()
+            reset_execution_state(full_reset=False)
             st.rerun()

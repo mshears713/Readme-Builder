@@ -39,10 +39,9 @@ How to Modify Templates:
 """
 
 from crewai import Agent, Task
-from typing import List
 import json
 
-from ..models.project_models import ProjectPlan, Phase, Step
+from ..models.project_models import ProjectPlan, Phase
 
 
 def create_prd_writer_agent() -> Agent:

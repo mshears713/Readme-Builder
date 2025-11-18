@@ -16,7 +16,6 @@ The output ProjectIdea becomes the foundation for all downstream agents
 """
 
 from crewai import Agent, Task
-from typing import Dict, Any
 import json
 
 from ..models.project_models import ProjectIdea
@@ -176,7 +175,7 @@ def parse_concept_expansion_result(result: str, raw_idea: str) -> ProjectIdea:
     except (json.JSONDecodeError, KeyError, AttributeError) as e:
         # Fallback: if JSON parsing fails, use the raw output as refined summary
         print(f"Warning: Could not parse agent output as JSON: {e}")
-        print(f"Using raw output as refined summary")
+        print("Using raw output as refined summary")
 
         return ProjectIdea(
             raw_description=raw_idea,

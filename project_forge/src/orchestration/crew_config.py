@@ -11,11 +11,11 @@ Phase 3: Adds PhaseDesigner, TeacherAgent, EvaluatorAgent for full plan generati
 Phase 4 will add: PRDWriterAgent.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Any
 from dataclasses import dataclass
 from crewai import Crew
 
-from ..models.project_models import ProjectIdea, ProjectGoals, FrameworkChoice, ProjectPlan, Phase
+from ..models.project_models import ProjectIdea, ProjectGoals, FrameworkChoice, ProjectPlan
 from ..agents.concept_expander_agent import (
     create_concept_expander_agent,
     create_concept_expansion_task,
@@ -165,7 +165,7 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
     # Parse into ProjectIdea
     project_idea = parse_concept_expansion_result(concept_result, raw_idea)
 
-    print(f"✓ Refined concept:")
+    print("✓ Refined concept:")
     print(f"  {project_idea.refined_summary}\n")
     print(f"  Constraints: {project_idea.constraints}\n")
 
@@ -195,10 +195,10 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
     # Parse into ProjectGoals
     project_goals = parse_goals_analysis_result(goals_result)
 
-    print(f"✓ Learning goals:")
+    print("✓ Learning goals:")
     for goal in project_goals.learning_goals:
         print(f"  - {goal}")
-    print(f"\n✓ Technical goals:")
+    print("\n✓ Technical goals:")
     for goal in project_goals.technical_goals:
         print(f"  - {goal}")
     print(f"\n  Priority: {project_goals.priority_notes}\n")
@@ -229,7 +229,7 @@ def create_planning_crew(raw_idea: str, skill_level: str = "intermediate", verbo
     # Parse into FrameworkChoice
     framework_choice = parse_framework_selection_result(framework_result)
 
-    print(f"✓ Selected frameworks:")
+    print("✓ Selected frameworks:")
     print(f"  Frontend: {framework_choice.frontend or 'None (CLI-only)'}")
     print(f"  Backend:  {framework_choice.backend or 'None'}")
     print(f"  Storage:  {framework_choice.storage or 'None'}")
@@ -436,7 +436,7 @@ def create_full_plan_crew(
             # to guide refinement. For Phase 3, we just retry.
             iteration += 1
         else:
-            print(f"Max iterations reached. Using best-effort plan.\n")
+            print("Max iterations reached. Using best-effort plan.\n")
             # Accept the plan even if not perfect after max iterations
             evaluation_result.approved = True
             if progress_callback:

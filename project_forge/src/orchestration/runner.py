@@ -18,9 +18,15 @@ import sys
 import argparse
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
+
+from ..utils.tracing_setup import (
+    collect_langsmith_diagnostics,
+    describe_langsmith_status,
+    initialize_langsmith_client,
+)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -195,6 +201,9 @@ def main():
     # Set up logging
     logger = setup_logging(args.log_level, args.verbose)
     logger.info("Project Forge starting...")
+    diag = collect_langsmith_diagnostics()
+    diag = initialize_langsmith_client(diag)
+    logger.info(describe_langsmith_status(diag))
 
     # Get the project idea
     idea = get_project_idea(args)
@@ -222,7 +231,7 @@ def main():
     print(f"PROJECT FORGE - Phase {args.phase}")
     print("=" * 80)
     print()
-    print(f"Configuration:")
+    print("Configuration:")
     print(f"  Skill Level:  {args.skill}")
     print(f"  Complexity:   {args.complexity}")
     print(f"  Project Type: {args.project_type}")
@@ -336,7 +345,6 @@ def main():
             print(f"  Status: {'✓ Approved' if eval_result.approved else '✗ Needs work'}")
             print(f"  Iterations: {result.iterations}")
             if eval_result.scores:
-                from ..tools.rubric_tool import RubricCriterion
                 for criterion, score in eval_result.scores.items():
                     print(f"  {criterion.value.title()}: {score.score}/10")
             print()
@@ -411,7 +419,6 @@ def main():
             print(f"  Status:     {'✓ Approved' if eval_result.approved else '✗ Needs work'}")
             print(f"  Iterations: {result.iterations}")
             if eval_result.scores:
-                from ..tools.rubric_tool import RubricCriterion
                 for criterion, score in eval_result.scores.items():
                     print(f"  {criterion.value.title()}: {score.score}/10")
             print()

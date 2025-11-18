@@ -1,10 +1,4 @@
-"""
-Evaluation rubric tools for assessing project plans and outputs.
-
-EvaluatorAgent uses these rubrics to score different aspects of the project plan
-(clarity, feasibility, teaching value) and decide whether to approve or request
-revisions. Provides structured scoring with explanations.
-"""
+"""Evaluation rubric helpers shared by multiple Project Forge agents."""
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Any

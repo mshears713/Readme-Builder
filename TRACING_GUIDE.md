@@ -82,17 +82,23 @@ Access it from the sidebar: **Navigation → 🔍 Tracing**
 
 ### 4. Tracing Utility Module
 
-**New file:** `project_forge/src/utils/tracing_setup.py`
+**File:** `project_forge/src/utils/tracing_setup.py`
 
 Utility functions:
-- `setup_langsmith_tracing()` - Auto-configure LangSmith
+- `collect_langsmith_diagnostics()` - Inspect LangSmith env vars without side effects
+- `initialize_langsmith_client()` - Safe helper that instantiates the client (logs errors instead of crashing)
+- `setup_langsmith_tracing()` - Auto-configure LangSmith (uses the diagnostics helpers above)
 - `setup_langfuse_tracing()` - Auto-configure LangFuse
 - `setup_tracing()` - Set up all available backends
-- `get_tracing_info()` - Get current configuration status
+- `get_tracing_info()` - Get current configuration status + diagnostics summary
 
 Usage:
 ```python
-from project_forge.src.utils.tracing_setup import setup_tracing, get_tracing_info
+from project_forge.src.utils.tracing_setup import (
+    collect_langsmith_diagnostics,
+    setup_tracing,
+    get_tracing_info,
+)
 
 # Auto-setup all configured backends
 status = setup_tracing(verbose=True)
@@ -101,6 +107,10 @@ status = setup_tracing(verbose=True)
 info = get_tracing_info()
 if info["langsmith"]["enabled"]:
     print(f"LangSmith project: {info['langsmith']['project']}")
+
+# Run diagnostics before launching crews
+diag = collect_langsmith_diagnostics()
+print(diag.status_label)
 ```
 
 ## Debugging PRD Writer Issues

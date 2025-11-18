@@ -1,19 +1,13 @@
-# Project Forge - Multi-Agent README Generator
-# Requirements file for Python dependencies
-
-# Streamlit UI
-streamlit>=1.28.0
-
-# CrewAI and Agent Framework
-crewai>=0.28.0
-langchain>=0.1.0
-langchain-openai>=0.1.0
-
-# LLM Providers
-openai>=1.0.0
-
-# Data handling
-pyyaml>=6.0
-
-# Utilities
-python-dotenv>=1.0.0
+# Runtime dependencies for Project Forge
+streamlit==1.32.2
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+crewai==0.30.11
+langchain==0.1.17
+langchain-openai==0.1.6
+langsmith==0.1.39
+openai==1.23.6
+pyyaml==6.0.1
+python-dotenv==1.0.1
+httpx==0.27.0

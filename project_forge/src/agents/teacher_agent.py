@@ -31,10 +31,10 @@ Teaching Note:
 """
 
 from crewai import Agent, Task
-from typing import List, Dict, Any
+from typing import List
 import json
 
-from ..models.project_models import ProjectIdea, ProjectGoals, Phase, Step, ProjectPlan
+from ..models.project_models import ProjectGoals, Phase, Step
 
 
 def create_teacher_agent() -> Agent:
@@ -308,7 +308,7 @@ def parse_teaching_enrichment_result(result: str, original_phases: List[Phase]) 
 
     except (json.JSONDecodeError, KeyError, IndexError) as e:
         print(f"Error parsing teaching enrichment result: {e}")
-        print(f"Falling back to original phases without teaching annotations")
+        print("Falling back to original phases without teaching annotations")
 
         # Return original phases with generic teaching notes
         return original_phases, f"(Teaching enrichment failed: {str(e)})"

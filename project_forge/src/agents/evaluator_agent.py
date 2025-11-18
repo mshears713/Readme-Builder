@@ -27,12 +27,12 @@ Teaching Note:
     loops and API cost blowout. We use a simple max_iterations approach.
 """
 
-from crewai import Agent, Task
-from typing import List, Dict, Any, Optional
-import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional
 
-from ..models.project_models import ProjectIdea, ProjectGoals, ProjectPlan
+from crewai import Agent, Task
+
+from ..models.project_models import ProjectPlan
 from ..tools.rubric_tool import (
     RubricScore,
     RubricCriterion,
@@ -47,23 +47,19 @@ from ..tools.consistency_tool import validate_project_plan, ConsistencyReport
 
 @dataclass
 class EvaluationResult:
-    """
-    Result of evaluating a project component.
+    """Structured output from heuristic + rubric evaluation."""
 
-    Attributes:
-        approved: Whether the component passes evaluation
-        scores: Dict of rubric scores by criterion
-        consistency_report: Structural consistency check results
-        feedback: Detailed feedback and suggestions
-        critical_issues: List of blocking problems that must be fixed
-        suggestions: List of optional improvements
-    """
     approved: bool
     scores: Dict[RubricCriterion, RubricScore]
     consistency_report: Optional[ConsistencyReport]
     feedback: str
     critical_issues: List[str]
     suggestions: List[str]
+    architecture_notes: List[str] = field(default_factory=list)
+    resilience_risks: List[str] = field(default_factory=list)
+    performance_alerts: List[str] = field(default_factory=list)
+    test_recommendations: List[str] = field(default_factory=list)
+    naming_feedback: Optional[str] = None
 
 
 def create_evaluator_agent() -> Agent:
@@ -121,7 +117,8 @@ def create_evaluator_agent() -> Agent:
         - Overlook missing implementation details in teaching_guidance
         - Approve plans that require user input mid-execution
         - Reject plans for arbitrary or subjective reasons
-        - Provide vague feedback like "make it better"""
+        - Provide vague feedback like "make it better"
+        """,
         allow_delegation=False,
         verbose=True
     )
@@ -159,9 +156,14 @@ def evaluate_plan_quality(
         Phase 5 enhancement adds sophisticated scope validation to prevent
         users from attempting projects that are too ambitious or too trivial.
     """
-    scores = {}
-    critical_issues = []
-    suggestions = []
+    scores: Dict[RubricCriterion, RubricScore] = {}
+    critical_issues: List[str] = []
+    suggestions: List[str] = []
+    architecture_notes: List[str] = []
+    resilience_risks: List[str] = []
+    performance_alerts: List[str] = []
+    test_recommendations: List[str] = []
+    naming_feedback: Optional[str] = None
 
     # Run consistency checks
     consistency_report = validate_project_plan(plan)
@@ -224,12 +226,26 @@ def evaluate_plan_quality(
 
     # Additional Phase 5 checks for trivial or overambitious plans
     total_steps = sum(len(phase.steps) for phase in plan.phases)
+    phase_lengths = [len(phase.steps) for phase in plan.phases if phase.steps]
+
+    if phase_lengths:
+        max_len = max(phase_lengths)
+        min_len = min(phase_lengths)
+        if max_len - min_len > 6:
+            architecture_notes.append(
+                "Phase sizes vary widely; consider redistributing work for steadier pacing."
+            )
+
+    duplicate_phase_names = len({phase.name for phase in plan.phases}) != len(plan.phases)
+    if duplicate_phase_names:
+        architecture_notes.append("Duplicate phase names detected; rename phases for clarity.")
 
     # Reject plans that are too trivial
     if total_steps < 20:
         critical_issues.append(
             f"Plan is too trivial: Only {total_steps} steps. Even 'toy' projects should have 20-30 steps to provide meaningful learning."
         )
+        performance_alerts.append("Increase the step count to cover a full practice loop.")
 
     # Reject plans that are clearly overambitious
     if time_constraint.startswith("1 week") or time_constraint == "1 week":
@@ -237,11 +253,34 @@ def evaluate_plan_quality(
             critical_issues.append(
                 f"Plan is too ambitious for 1 week: {total_steps} steps. Reduce scope or extend timeline to 1-2 weeks."
             )
+            performance_alerts.append("Scope overshoot for 1 week timeline.")
     elif "1-2 week" in time_constraint or "2 week" in time_constraint:
         if total_steps > 60:
             critical_issues.append(
                 f"Plan is too ambitious for 2 weeks: {total_steps} steps. Reduce scope or set project_type to 'ambitious' with 3-4 weeks."
             )
+            performance_alerts.append("Scope overshoot for 2 week timeline.")
+
+    # Naming/style critique
+    phase_titles = [phase.name for phase in plan.phases]
+    if phase_titles and not naming_feedback:
+        if any(title and title.upper() == title for title in phase_titles):
+            naming_feedback = "Phase names use ALL CAPS; prefer sentence or title case for readability."
+        elif any(len(title.split()) < 2 for title in phase_titles):
+            naming_feedback = "Phase names look too short; add context so the teacher/LLM knows the milestone." 
+
+    # Resilience/test heuristics
+    step_texts = [
+        (step.title + " " + step.description + " " + (step.teaching_guidance or "")).lower()
+        for phase in plan.phases
+        for step in phase.steps
+    ]
+
+    if step_texts and not any("test" in text for text in step_texts):
+        test_recommendations.append("Add a dedicated testing/validation step so the plan closes with verification.")
+
+    if step_texts and not any(keyword in text for text in step_texts for keyword in ["error", "exception", "logging", "retry"]):
+        resilience_risks.append("No step mentions error handling or logging; add explicit resilience work.")
 
     # Check global teaching notes
     if not plan.teaching_notes or len(plan.teaching_notes.strip()) < 50:
@@ -280,18 +319,25 @@ def evaluate_plan_quality(
     approved = len(critical_issues) == 0 and all(score.passes() for score in scores.values())
 
     # Generate feedback summary
+    plan_snapshot = (
+        f"Architecture snapshot: {len(plan.phases)} phases, {total_steps} steps.\n"
+        f"Stack focus → Frontend: {plan.framework.frontend or 'n/a'}, "
+        f"Backend: {plan.framework.backend or 'n/a'}, Storage: {plan.framework.storage or 'n/a'}."
+    )
+
     if approved:
         feedback = f"""Plan approved! ✓
 
-Scores:
-- Clarity: {scores[RubricCriterion.CLARITY].score}/10
-- Feasibility: {scores[RubricCriterion.FEASIBILITY].score}/10
-- Teaching Value: {scores[RubricCriterion.TEACHING_VALUE].score}/10
-- Technical Depth: {scores[RubricCriterion.TECHNICAL_DEPTH].score}/10
-- Balance: {scores[RubricCriterion.BALANCE].score}/10
+{plan_snapshot}
 
-Structure: {total_steps} steps across {len(plan.phases)} phases
-Project Type: {project_type} ({time_constraint})
+Paragraph 1 — Quality Summary:
+Clarity {scores[RubricCriterion.CLARITY].score}/10, Feasibility {scores[RubricCriterion.FEASIBILITY].score}/10,
+Teaching Value {scores[RubricCriterion.TEACHING_VALUE].score}/10,
+Technical Depth {scores[RubricCriterion.TECHNICAL_DEPTH].score}/10, Balance {scores[RubricCriterion.BALANCE].score}/10.
+
+Paragraph 2 — Structural Notes:
+The pacing across phases feels consistent and should keep an AI engaged for 1+ hours. Review the optional notes below
+to tighten naming/style and make space for testing before shipping.
 """
         if suggestions:
             feedback += "\nOptional improvements:\n" + "\n".join(f"- {s}" for s in suggestions)
@@ -301,15 +347,15 @@ Project Type: {project_type} ({time_constraint})
 Critical issues to fix:
 {chr(10).join(f'- {issue}' for issue in critical_issues)}
 
-Current scores:
+Paragraph 1 — Quality Breakdown:
 - Clarity: {scores[RubricCriterion.CLARITY].score}/10
 - Feasibility: {scores[RubricCriterion.FEASIBILITY].score}/10
 - Teaching Value: {scores[RubricCriterion.TEACHING_VALUE].score}/10
 - Technical Depth: {scores[RubricCriterion.TECHNICAL_DEPTH].score}/10
 - Balance: {scores[RubricCriterion.BALANCE].score}/10
 
-Structure: {total_steps} steps across {len(plan.phases)} phases
-Project Type: {project_type} ({time_constraint})
+Paragraph 2 — Structural Context:
+{plan_snapshot}
 """
 
     return EvaluationResult(
@@ -318,7 +364,12 @@ Project Type: {project_type} ({time_constraint})
         consistency_report=consistency_report,
         feedback=feedback,
         critical_issues=critical_issues,
-        suggestions=suggestions
+        suggestions=suggestions,
+        architecture_notes=architecture_notes,
+        resilience_risks=resilience_risks,
+        performance_alerts=performance_alerts,
+        test_recommendations=test_recommendations,
+        naming_feedback=naming_feedback,
     )
 
 
@@ -374,7 +425,8 @@ Evaluate this project plan for AUTONOMOUS AI EXECUTION.
 
 CRITICAL: This plan will be executed by an AI agent (like Claude Code) that must complete
 all steps in ONE CONTINUOUS SESSION without user intervention. Evaluate whether the plan
-enables 1+ hours of autonomous work.
+enables 1+ hours of autonomous work. Provide multi-paragraph commentary that covers
+architecture, naming/style, performance, error-handling, and test coverage recommendations.
 
 {plan_summary}
 
@@ -397,6 +449,11 @@ EVALUATION CRITERIA:
    - Is teaching_guidance comprehensive with technical specifics?
    - Are there any steps requiring external research or clarification?
    - Can an AI work for 1+ hours without stopping to ask questions?
+
+4. ARCHITECTURE & TESTING NOTES:
+   - Comment on naming/style consistency.
+   - Flag missing error-handling or testing steps.
+   - Suggest resilience or coverage improvements.
 
 4. BALANCE (0-10):
    - Are phases roughly equal in size?

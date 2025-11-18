@@ -1,9 +1,4 @@
-"""
-Core data models for Project Forge.
-
-This module defines the data structures that flow through the multi-agent system.
-Each agent reads and writes these models to maintain structured communication.
-"""
+"""Core data models passed between Project Forge agents."""
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
@@ -86,14 +81,33 @@ class Step:
         title: Short, actionable step name (e.g., "Create user authentication endpoint")
         description: Detailed instructions for what to build in this step
         teaching_guidance: Instructions for implementing agent on what educational features to build
-                          (tooltips, examples, documentation, interactive demos, etc.)
         dependencies: List of step indices that must be completed before this one
+        what_you_learn: Legacy alias kept for backwards compatibility with docs/examples
     """
+
     index: int
     title: str
     description: str = ""
     teaching_guidance: str = ""
     dependencies: List[int] = field(default_factory=list)  # indices of prerequisite steps
+    what_you_learn: str = ""
+
+    def __post_init__(self) -> None:
+        """Keep legacy `what_you_learn` and the canonical teaching field in sync."""
+
+        if self.what_you_learn and not self.teaching_guidance:
+            object.__setattr__(self, "teaching_guidance", self.what_you_learn)
+        elif self.teaching_guidance and not self.what_you_learn:
+            object.__setattr__(self, "what_you_learn", self.teaching_guidance)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Ensure both naming conventions always match for downstream consumers."""
+
+        object.__setattr__(self, name, value)
+        if name == "teaching_guidance":
+            object.__setattr__(self, "what_you_learn", value)
+        elif name == "what_you_learn":
+            object.__setattr__(self, "teaching_guidance", value)
 
 
 @dataclass

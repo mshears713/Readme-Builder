@@ -41,9 +41,13 @@ def render():
         - `EvaluationResult` object with:
             - `approved`: Boolean (pass/fail)
             - `scores`: Dictionary of RubricScore for each criterion
-            - `feedback`: Overall assessment
+            - `feedback`: Multi-paragraph assessment
             - `critical_issues`: List of blocking problems
             - `suggestions`: List of improvement recommendations
+            - `architecture_notes`: Highlights on structure and pacing
+            - `performance_alerts` / `resilience_risks`: Warnings about runtime safety
+            - `test_recommendations`: Actionable coverage hints
+            - `naming_feedback`: Style critique for phase/step names
 
         **Model:** Uses LLM with quality assessment rubrics
         """)
@@ -128,10 +132,11 @@ def render():
         1. **Rubric Scoring**: Evaluates plan against 5 quality criteria (each scored 0-10)
         2. **Consistency Check**: Validates structural integrity and dependencies
         3. **Completeness Validation**: Ensures all goals are addressed
-        4. **Issue Identification**: Finds critical problems that block approval
-        5. **Suggestion Generation**: Provides improvement recommendations
-        6. **Approval Decision**: Approves or rejects based on scoring thresholds
-        7. **Iteration Trigger**: Requests refinement if quality is insufficient
+        4. **Architecture Review**: Summarizes pacing, naming, and distribution notes
+        5. **Issue Identification**: Finds critical problems that block approval
+        6. **Suggestion Generation**: Provides improvement recommendations and test hints
+        7. **Approval Decision**: Approves or rejects based on scoring thresholds
+        8. **Iteration Trigger**: Requests refinement if quality is insufficient
         """)
 
         st.write("**Quality Thresholds:**")

@@ -170,7 +170,7 @@ Core objects in models/project_models.py:
 	•	index
 	•	title
 	•	description
-	•	what_you_learn
+	•	teaching_guidance
 	•	dependencies
 	•	ProjectPlan
 	•	idea
@@ -316,6 +316,41 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python -m src.orchestration.runner "Build a Streamlit teaching app for async APIs"
+
+Optional FastAPI server (preview-only by default):
+
+```bash
+uvicorn project_forge.src.api.app:app --host 0.0.0.0 --port 8000
+
+# Then POST ideas to /api/v1/plan
+curl -X POST http://localhost:8000/api/v1/plan \
+     -H 'Content-Type: application/json' \
+     -d '{"idea": "Build a vibe coding dashboard", "dry_run": true}'
+```
+
+Dockerized workflow (multi-stage, ARM-friendly image):
+
+```bash
+# Build once
+docker build -t project-forge .
+
+# Run Streamlit UI
+docker run --rm -p 8501:8501 -e APP_MODE=streamlit \
+    -e OPENAI_API_KEY=$OPENAI_API_KEY project-forge
+
+# Run FastAPI mode
+docker run --rm -p 8000:8000 -e APP_MODE=api \
+    -e APP_PORT=8000 -e OPENAI_API_KEY=$OPENAI_API_KEY project-forge
+```
+
+LangSmith diagnostics (safe to run even without keys):
+
+```python
+from project_forge.src.utils.tracing_setup import collect_langsmith_diagnostics
+
+diag = collect_langsmith_diagnostics()
+print(diag.status_label)
+```
 
 ⸻
 

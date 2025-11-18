@@ -15,7 +15,6 @@ The output ProjectGoals guides framework selection and teaching enrichment.
 """
 
 from crewai import Agent, Task
-from typing import Dict, Any
 import json
 
 from ..models.project_models import ProjectIdea, ProjectGoals
@@ -194,7 +193,7 @@ def parse_goals_analysis_result(result: str) -> ProjectGoals:
         )
     except (json.JSONDecodeError, KeyError, AttributeError) as e:
         print(f"Warning: Could not parse goals analysis output as JSON: {e}")
-        print(f"Using fallback goals")
+        print("Using fallback goals")
 
         # Fallback to empty goals (better than crashing)
         return ProjectGoals(
