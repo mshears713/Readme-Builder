@@ -207,11 +207,15 @@ def expand_concept(raw_idea: str, skill_level: str = "intermediate") -> ProjectI
         >>> print(idea.refined_summary)
         "A Streamlit web application that visualizes data in an interactive dashboard..."
     """
+    from crewai import Crew
+
     agent = create_concept_expander_agent()
     task = create_concept_expansion_task(agent, raw_idea, skill_level)
 
-    # Execute the task (CrewAI will call the LLM)
-    result = task.execute()
+    # Execute the task through a Crew (CrewAI will call the LLM)
+    crew = Crew(agents=[agent], tasks=[task], verbose=True)
+    output = crew.kickoff()
+    result = output.raw
 
     # Parse into ProjectIdea
     project_idea = parse_concept_expansion_result(result, raw_idea)

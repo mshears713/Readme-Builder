@@ -286,11 +286,15 @@ def select_frameworks(
         >>> print(f"Frontend: {frameworks.frontend}, Backend: {frameworks.backend}")
         Frontend: Streamlit, Backend: Python
     """
+    from crewai import Crew
+
     agent = create_framework_selector_agent()
     task = create_framework_selection_task(agent, project_idea, project_goals, skill_level)
 
-    # Execute the task
-    result = task.execute()
+    # Execute the task through a Crew
+    crew = Crew(agents=[agent], tasks=[task], verbose=True)
+    output = crew.kickoff()
+    result = output.raw
 
     # Parse into FrameworkChoice
     framework_choice = parse_framework_selection_result(result)

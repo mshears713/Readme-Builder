@@ -467,11 +467,11 @@ def evaluate_teaching_clarity(plan: Any, skill_level: str = "intermediate") -> R
         feedback_points.append("Later phases should introduce more advanced concepts")
 
     # Skill level adjustments
-    if skill_level == "beginner" and learning_coverage < 90:
+    if skill_level == "beginner" and guidance_coverage < 90:
         score -= 1
         feedback_points.append("Beginner projects need very thorough teaching annotations (aim for 90%+)")
 
-    feedback = " | ".join(feedback_points) if feedback_points else f"Excellent teaching clarity with {learning_coverage:.0f}% learning coverage"
+    feedback = " | ".join(feedback_points) if feedback_points else f"Excellent teaching clarity with {guidance_coverage:.0f}% learning coverage"
 
     return RubricScore(
         criterion=RubricCriterion.TEACHING_VALUE,
