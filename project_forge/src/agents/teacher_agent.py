@@ -1,31 +1,33 @@
 """
-TeacherAgent - Adds educational feature guidance to project plans.
+TeacherAgent - Adds comprehensive implementation guidance for autonomous AI execution.
 
 This agent takes the structured phase/step plan from PhaseDesignerAgent and
-enriches it with instructions for building educational features. It adds
-"teaching_guidance" fields to each step that tell the implementing AI agent
-what educational elements to incorporate into the UI and documentation.
+enriches it with detailed implementation guidance. It adds "teaching_guidance"
+fields to each step that provide comprehensive technical details, code patterns,
+and architectural guidance that AI agents need for autonomous execution.
 
 Key responsibilities:
-- Add "teaching_guidance" instructions to each step
-- Specify what educational features should be built into the program
-- Guide the agent to include tooltips, examples, documentation, and tutorials
-- Ensure the final program helps users learn as they use it
-- Make the program itself a teaching tool
+- Add detailed "teaching_guidance" to each step for AI execution
+- Specify exact implementation patterns, code structures, and technical approaches
+- Provide comprehensive details so AI agents can execute without clarification
+- Include specific file names, function signatures, and technical decisions
+- Ensure steps are complete enough for 1+ hour autonomous execution
+- Guide the AI on what code, documentation, and features to implement
 
-The output is an enriched ProjectPlan where every step includes instructions
-for what educational features the implementing agent should build.
+The output is an enriched ProjectPlan where every step includes comprehensive
+implementation details that enable autonomous AI execution without user intervention.
 
 Teaching Note:
-    This agent embodies the "meta" nature of Project Forge. We're not teaching
-    the USER how to code - we're instructing the AGENT what educational features
-    to build INTO the program so the program itself becomes a learning tool.
+    This agent now focuses on IMPLEMENTATION GUIDANCE for AI agents rather than
+    educational features for end users. The guidance should be so detailed and
+    clear that an AI agent can execute the step completely autonomously.
 
-    Good teaching guidance:
-    - Specifies concrete educational features to build (tooltips, examples, docs)
-    - Focuses on making the program teach its users
-    - Instructs the agent what to include, not what the user should learn
-    - Creates a program that guides users as they interact with it
+    Good implementation guidance:
+    - Specifies exact code patterns and technical approaches
+    - Includes file names, function signatures, and architectural decisions
+    - Provides enough detail that no external research is needed
+    - Mentions any documentation or comments to include in the code
+    - Ensures the AI can build a complete, working feature autonomously
 """
 
 from crewai import Agent, Task
@@ -37,58 +39,64 @@ from ..models.project_models import ProjectIdea, ProjectGoals, Phase, Step, Proj
 
 def create_teacher_agent() -> Agent:
     """
-    Create the TeacherAgent that instructs AI agents on educational features to build.
+    Create the TeacherAgent that provides comprehensive implementation guidance for AI execution.
 
-    This agent understands how to make software educational and guides the
-    implementing AI agent to build features that help users learn. It focuses
-    on specifying concrete educational elements to include in the program.
+    This agent specializes in enriching build steps with detailed technical guidance
+    that enables autonomous AI execution. It provides the missing implementation
+    details that allow AI agents to complete steps without clarification or research.
 
     Returns:
-        CrewAI Agent configured for educational feature guidance
+        CrewAI Agent configured for implementation guidance
 
     Teaching Note:
-        This agent writes instructions for the IMPLEMENTING AGENT, not lessons
-        for the user. It tells the agent what tooltips, examples, documentation,
-        and interactive features to build into the program.
+        This agent provides IMPLEMENTATION GUIDANCE for the executing AI agent,
+        not educational features for end users. It fills in technical details,
+        code patterns, and architectural decisions so the AI can work autonomously.
     """
     return Agent(
-        role="Educational Product Designer and Learning Experience Architect",
-        goal="Guide AI agents to build programs with rich educational features that help users learn through interaction",
-        backstory="""You are an expert at designing educational software and
-        interactive learning experiences. You specialize in instructing AI agents
-        on what educational features to build into programs.
+        role="Technical Implementation Guide and Software Architecture Specialist",
+        goal="Provide comprehensive implementation guidance that enables AI agents to execute build steps autonomously",
+        backstory="""You are an expert software architect and technical mentor who
+        specializes in providing detailed implementation guidance for AI agents.
+        Your role is to enrich high-level build steps with the technical details
+        needed for autonomous execution.
 
         Your expertise includes:
-        - Designing intuitive UI elements that guide users (tooltips, hints, examples)
-        - Creating inline documentation that teaches concepts in context
-        - Building interactive tutorials and guided walkthroughs
-        - Incorporating progressive disclosure of complexity
-        - Making programs self-documenting and discoverable
-        - Designing help systems and contextual assistance
+        - Specifying exact code patterns and architectural approaches
+        - Providing comprehensive technical details for autonomous implementation
+        - Defining file structures, function signatures, and data models
+        - Explaining technical decisions and rationale
+        - Detailing error handling, edge cases, and robustness requirements
+        - Specifying what documentation and comments to include in code
+        - Ensuring no ambiguity that would require external research
+        - Making implementation steps self-contained and complete
 
-        Your design philosophy:
-        - Programs should teach users how to use them
-        - Learning happens through interaction and exploration
-        - Good UI design includes educational scaffolding
-        - Documentation should be embedded where users need it
-        - Examples and demonstrations are more effective than pure text
-        - The program itself is the teaching tool
+        Your philosophy for AI-executable guidance:
+        - Every step should be implementable without clarification
+        - Technical details should be specific and unambiguous
+        - Code patterns and structures should be explicitly stated
+        - File names, function names, and key APIs should be mentioned
+        - The AI should never need to stop and ask for more information
+        - Implementation guidance is comprehensive, not minimal
+        - Good guidance enables 1+ hours of autonomous work
 
-        You write instructions that tell the implementing agent to:
-        - Add tooltips explaining features and concepts when users hover
-        - Include inline code comments that explain patterns and decisions
-        - Create example/demo sections showing how things work
-        - Build help sections with clear explanations and examples
-        - Add interactive elements that demonstrate concepts
-        - Include "Learn More" links to deeper explanations
-        - Create guided tutorials or walkthroughs for first-time users
-        - Display hints and tips at appropriate moments
+        You provide guidance that tells the implementing AI:
+        - What specific code patterns and structures to use
+        - Which files to create/modify and what to put in them
+        - What function signatures and class definitions to implement
+        - How to handle errors and edge cases
+        - What comments and docstrings to include for code clarity
+        - What testing or validation to perform
+        - Any configuration or setup requirements
+        - Architectural decisions and technical rationale
+        - What user-facing documentation or help features to add (if applicable)
 
         You DO NOT:
-        - Write lessons teaching the user how to code
-        - Explain programming concepts to the user directly
-        - Focus on theory rather than practical UI features
-        - Write generic suggestions without specific implementation details""",
+        - Write vague suggestions like "implement appropriately"
+        - Leave technical decisions ambiguous or unspecified
+        - Assume the AI will figure out missing details
+        - Focus on theory without practical implementation guidance
+        - Create guidance that requires external research or clarification""",
         allow_delegation=False,
         verbose=True
     )
@@ -101,24 +109,24 @@ def create_teaching_enrichment_task(
     skill_level: str = "intermediate"
 ) -> Task:
     """
-    Create the task for adding teaching annotations to phases and steps.
+    Create the task for adding comprehensive implementation guidance to phases and steps.
 
     This task provides the existing phase structure and asks the agent to
-    enrich each step with learning annotations and create global teaching notes.
+    enrich each step with detailed technical guidance for autonomous AI execution.
 
     Args:
-        agent: The TeacherAgent
-        phases: List of Phase objects from PhaseDesignerAgent (steps have empty what_you_learn)
+        agent: The TeacherAgent (now an implementation guidance specialist)
+        phases: List of Phase objects from PhaseDesignerAgent (steps have empty teaching_guidance)
         goals: Learning and technical objectives for context
-        skill_level: User's skill level
+        skill_level: Skill level of the final program's users
 
     Returns:
-        CrewAI Task configured for teaching enrichment
+        CrewAI Task configured for implementation guidance enrichment
 
     Teaching Note:
         We pass the full phase structure to the agent and ask it to return
-        the same structure with added teaching annotations. This preserves
-        the step details while adding pedagogical value.
+        the same structure with added implementation guidance. This preserves
+        the step details while adding comprehensive technical details for AI execution.
     """
     # Build a summary of the phases for context
     phases_summary = []
@@ -129,52 +137,66 @@ def create_teaching_enrichment_task(
         )
 
     description = f"""
-Add educational feature guidance to this project plan.
+Add comprehensive implementation guidance to enable AUTONOMOUS AI EXECUTION of this project plan.
 
-LEARNING GOALS (what users should learn from using the program):
+CRITICAL: This plan will be executed by an AI agent (like Claude Code) that will complete
+ALL steps in ONE CONTINUOUS SESSION without user intervention. Your guidance must be detailed
+enough that the AI can work autonomously for 1+ hours and deliver a complete, working project.
+
+LEARNING GOALS (what users should learn from using the final program):
 {chr(10).join(f'- {goal}' for goal in goals.learning_goals)}
 
-TECHNICAL GOALS (what the program does):
+TECHNICAL GOALS (what the program must do):
 {chr(10).join(f'- {goal}' for goal in goals.technical_goals)}
 
-USER SKILL LEVEL: {skill_level}
+TARGET USER SKILL LEVEL: {skill_level}
 
 CURRENT PLAN STRUCTURE:
 {chr(10).join(phases_summary)}
 
 Your task is to:
-1. Add a "teaching_guidance" instruction to EVERY step
-2. Create global teaching notes for the implementing AI agent
+1. Add comprehensive "teaching_guidance" to EVERY step (detailed implementation guidance)
+2. Create global implementation notes for the AI agent's overall strategy
 
-CRITICAL: You are NOT teaching the user how to code. You are instructing the
-implementing AI agent what educational features to BUILD INTO the program.
+CRITICAL: You are providing IMPLEMENTATION GUIDANCE for the AI agent, not educational
+features for end users. Your guidance should enable autonomous execution without clarification.
 
-GUIDELINES FOR "teaching_guidance" INSTRUCTIONS:
-- Keep to 1-3 sentences
-- Specify concrete UI/documentation features to include
-- Tell the agent WHAT to build (tooltips, examples, help sections, etc.)
-- Focus on making the program itself educational
-- Be specific about what educational elements to add
-- Consider the {skill_level} of users who will use the final program
+GUIDELINES FOR "teaching_guidance" IMPLEMENTATION DETAILS:
+- Write 2-5 sentences of comprehensive technical guidance
+- Specify exact code patterns, file names, and technical approaches
+- Include function signatures, class definitions, or key algorithms
+- Mention error handling and edge cases to consider
+- Specify what comments/docstrings to include in the code
+- Tell the AI what to implement, how to structure it, and where to put it
+- Be specific enough that no external research or clarification is needed
+- Include any user-facing documentation or help features to build (if applicable)
+- Ensure the guidance is complete and unambiguous
 
-EXAMPLES OF GOOD INSTRUCTIONS:
-✓ "Add inline code comments explaining the dataclass pattern and include a tooltip in the UI showing an example of how dataclasses reduce boilerplate vs. traditional classes."
-✓ "Create a help section documenting the API endpoints with example requests/responses, and include tooltips explaining RESTful conventions when users hover over endpoint paths."
-✓ "Include a 'Database Design' section in the documentation showing the schema diagram, and add comments in the database functions explaining the separation of concerns pattern."
-✓ "Build an interactive demo showing async/await in action - let users click to see the execution flow, and include a side-by-side comparison with synchronous code."
+EXAMPLES OF GOOD IMPLEMENTATION GUIDANCE:
+✓ "Create a User dataclass in models/user.py with fields: email (str), password_hash (str), created_at (datetime). Use bcrypt for password hashing. Include docstring explaining the user model and add a validate_email() method with regex checking. Add inline comments explaining the hashing approach."
 
-EXAMPLES OF BAD INSTRUCTIONS:
-✗ "Learn about databases" (this teaches the user, not the agent)
-✗ "You'll understand how to use SQLite here" (this is a lesson, not a build instruction)
-✗ "Make sure users learn programming" (too vague, no specific features)
-✗ "Add documentation" (not specific enough about what to document or how)
+✓ "Implement POST /auth/login in routes/auth.py using FastAPI. Accept email/password in request body, query database for user, verify password with bcrypt.checkpw(), return JWT token on success or 401 on failure. Include proper error handling and logging. Add docstring with example request/response."
 
-GUIDELINES FOR GLOBAL TEACHING NOTES:
-- Write 3-5 sentences instructing the agent on overall educational strategy
-- Specify what overarching educational features to include
-- Describe the learning experience users should have
-- Connect to the stated learning goals
-- Focus on the program as a teaching tool
+✓ "Create database.py with SQLite connection using sqlite3. Define init_db() function that creates users table with schema: id INTEGER PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT, created_at TIMESTAMP. Use context manager for connections. Add comprehensive comments explaining connection pooling and thread safety."
+
+✓ "Build a Streamlit login form in pages/login.py with st.text_input for email/password and st.button for submit. On submit, call auth API and handle response. Display st.success() or st.error() based on result. Include st.help() tooltip explaining the authentication flow. Add error messages for invalid inputs."
+
+EXAMPLES OF BAD IMPLEMENTATION GUIDANCE:
+✗ "Set up the database appropriately" (too vague, no specific guidance)
+✗ "Add user authentication" (not specific about how or what to implement)
+✗ "Handle errors as needed" (ambiguous, AI doesn't know which errors)
+✗ "Create API endpoints" (which endpoints? what should they do?)
+✗ "Make it secure" (not actionable without specific guidance)
+✗ "Research best practices and implement" (requires external research)
+
+GUIDELINES FOR GLOBAL IMPLEMENTATION NOTES:
+- Write 4-7 sentences instructing the AI on overall implementation strategy
+- Specify overarching architectural patterns and technical approaches
+- Describe how components should integrate and interact
+- Mention testing strategy and code quality expectations
+- Emphasize that code should be complete and production-ready (no TODOs or stubs)
+- Remind the AI to work sequentially and autonomously through all steps
+- Note any user-facing documentation or educational features to build into the program
 
 OUTPUT FORMAT (must be valid JSON):
 {{
@@ -188,7 +210,7 @@ OUTPUT FORMAT (must be valid JSON):
                     "index": 1,
                     "title": "Step title from input",
                     "description": "Step description from input",
-                    "teaching_guidance": "YOUR INSTRUCTION TO THE IMPLEMENTING AGENT HERE (1-3 sentences specifying what educational features to build)",
+                    "teaching_guidance": "YOUR COMPREHENSIVE IMPLEMENTATION GUIDANCE HERE (2-5 sentences with specific technical details, file names, code patterns, error handling, and documentation requirements)",
                     "dependencies": []
                 }},
                 ...
@@ -196,21 +218,27 @@ OUTPUT FORMAT (must be valid JSON):
         }},
         ...
     ],
-    "global_teaching_notes": "Your 3-5 sentence overview of the educational strategy for the implementing agent to follow..."
+    "global_teaching_notes": "Your 4-7 sentence overview of the implementation strategy, architectural patterns, testing approach, and autonomous execution guidelines for the AI agent to follow..."
 }}
 
-IMPORTANT:
+IMPORTANT FOR AUTONOMOUS EXECUTION:
 - Preserve all existing step data (title, description, dependencies, indices)
 - Only ADD the "teaching_guidance" field and global_teaching_notes
-- Write guidance for ALL {sum(len(p.steps) for p in phases)} steps
-- Make each instruction specific to that step's implementation
-- Ensure coherent educational features across the phases
-- Remember: You're instructing an AI agent what to BUILD, not teaching a user how to CODE
+- Write comprehensive guidance for ALL {sum(len(p.steps) for p in phases)} steps
+- Make each guidance specific, detailed, and unambiguous for that step
+- Include enough technical detail that the AI needs no clarification
+- Ensure the AI can execute all steps sequentially without stopping
+- Remember: You're providing IMPLEMENTATION DETAILS for autonomous AI execution
+- The final program should be appropriate for {skill_level} users
 """
 
     return Task(
         description=description,
-        expected_output="JSON object with enriched phases (including teaching_guidance for all steps) and global teaching notes for the implementing agent",
+        expected_output="""JSON object with enriched phases (including comprehensive implementation
+        guidance in teaching_guidance for all steps) and global implementation notes. Each
+        teaching_guidance must provide detailed technical guidance (2-5 sentences) with specific
+        code patterns, file names, function signatures, error handling, and documentation
+        requirements that enable autonomous AI execution without clarification.""",
         agent=agent
     )
 
@@ -292,26 +320,28 @@ def enrich_with_teaching(
     skill_level: str = "intermediate"
 ) -> tuple[List[Phase], str]:
     """
-    High-level function to enrich phases with educational feature guidance.
+    High-level function to enrich phases with comprehensive implementation guidance for AI execution.
 
-    This is the main entry point for teaching enrichment. It:
-    1. Creates the TeacherAgent
+    This is the main entry point for implementation guidance enrichment. It:
+    1. Creates the TeacherAgent (now an implementation guidance specialist)
     2. Creates the enrichment task
     3. Executes the task
-    4. Merges educational guidance into the phases
+    4. Merges detailed implementation guidance into the phases
 
     Args:
         phases: List of Phase objects from PhaseDesignerAgent
         goals: Learning and technical objectives
-        skill_level: Target user's skill level for the final program
+        skill_level: Target skill level for users of the final program
 
     Returns:
-        Tuple of (enriched phases with teaching_guidance fields, global teaching notes for implementing agent)
+        Tuple of (enriched phases with comprehensive teaching_guidance fields,
+                 global implementation notes for autonomous AI execution)
 
     Usage:
         >>> enriched_phases, global_notes = enrich_with_teaching(phases, goals, "intermediate")
         >>> print(enriched_phases[0].steps[0].teaching_guidance)
-        "Add inline comments explaining the project structure and include a README section with package organization diagram..."
+        "Create project structure with src/ directory containing models/, routes/, and utils/.
+        Use Python 3.10+ with FastAPI and SQLite. Include __init__.py files and a main.py entry point..."
     """
     from crewai import Crew
 
