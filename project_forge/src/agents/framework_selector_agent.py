@@ -237,7 +237,7 @@ def parse_framework_selection_result(result: str) -> FrameworkChoice:
 
         # Print rationale if provided (helpful for debugging)
         if "rationale" in data:
-            print(f"\nFramework Selection Rationale:")
+            print("\nFramework Selection Rationale:")
             print(f"  {data['rationale']}\n")
 
         return FrameworkChoice(
@@ -248,7 +248,7 @@ def parse_framework_selection_result(result: str) -> FrameworkChoice:
         )
     except (json.JSONDecodeError, KeyError, AttributeError) as e:
         print(f"Warning: Could not parse framework selection output as JSON: {e}")
-        print(f"Using fallback framework choices")
+        print("Using fallback framework choices")
 
         # Fallback to safe defaults
         return FrameworkChoice(

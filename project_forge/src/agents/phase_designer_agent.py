@@ -28,7 +28,7 @@ Teaching Note:
 """
 
 from crewai import Agent, Task
-from typing import List, Dict, Any
+from typing import List
 import json
 
 from ..models.project_models import ProjectIdea, ProjectGoals, FrameworkChoice, Phase, Step

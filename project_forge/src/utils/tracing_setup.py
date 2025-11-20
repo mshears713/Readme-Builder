@@ -1,56 +1,123 @@
-"""
-Tracing and observability setup utilities.
+"""Tracing and observability utilities for LangSmith and LangFuse."""
 
-This module provides functions to enable and configure tracing for the Project Forge
-multi-agent system using LangSmith or LangFuse.
-"""
-
-import os
 import logging
+import os
+from dataclasses import dataclass
 from typing import Optional
 
 
 logger = logging.getLogger(__name__)
 
 
-def setup_langsmith_tracing() -> bool:
-    """
-    Set up LangSmith tracing if configured via environment variables.
+@dataclass
+class LangSmithDiagnostics:
+    """Lightweight status report for LangSmith configuration."""
 
-    Checks for the following environment variables:
-    - LANGCHAIN_TRACING_V2: Set to "true" to enable tracing
-    - LANGCHAIN_API_KEY: Your LangSmith API key
-    - LANGCHAIN_PROJECT: Project name (defaults to "project-forge")
-    - LANGCHAIN_ENDPOINT: API endpoint (defaults to LangSmith cloud)
+    enabled_flag: bool
+    api_key_present: bool
+    project_name: str
+    endpoint: str
+    client_ready: bool = False
+    error_message: Optional[str] = None
 
-    Returns:
-        True if LangSmith tracing is enabled and configured, False otherwise
+    @property
+    def status_label(self) -> str:
+        if self.client_ready:
+            return "ready"
+        if not self.enabled_flag:
+            return "disabled"
+        if not self.api_key_present:
+            return "missing_api_key"
+        if self.error_message:
+            return f"error: {self.error_message}"
+        return "pending"
 
-    Usage:
-        if setup_langsmith_tracing():
-            logger.info("LangSmith tracing enabled")
-    """
-    tracing_enabled = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
-    api_key = os.getenv("LANGCHAIN_API_KEY", "")
 
-    if not tracing_enabled:
-        logger.debug("LangSmith tracing not enabled (LANGCHAIN_TRACING_V2 not set to 'true')")
-        return False
+def describe_langsmith_status(diag: Optional[LangSmithDiagnostics] = None) -> str:
+    """Return a friendly one-line summary describing LangSmith readiness."""
 
-    if not api_key:
-        logger.warning(
-            "LANGCHAIN_TRACING_V2 is enabled but LANGCHAIN_API_KEY is not set. "
-            "Tracing will not work without a valid API key."
+    diag = diag or collect_langsmith_diagnostics()
+
+    status = f"LangSmith status → {diag.status_label}"
+    details = [
+        f"enabled={'yes' if diag.enabled_flag else 'no'}",
+        f"api_key={'set' if diag.api_key_present else 'missing'}",
+    ]
+
+    if diag.enabled_flag:
+        details.append(f"project={diag.project_name}")
+        details.append(f"endpoint={diag.endpoint}")
+
+    if diag.error_message:
+        details.append(f"error={diag.error_message}")
+
+    if diag.client_ready:
+        details.append("client_ready=yes")
+
+    return f"{status} ({', '.join(details)})"
+
+
+def collect_langsmith_diagnostics() -> LangSmithDiagnostics:
+    """Return the current LangSmith environment status without side effects."""
+
+    enabled = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+    diag = LangSmithDiagnostics(
+        enabled_flag=enabled,
+        api_key_present=bool(os.getenv("LANGCHAIN_API_KEY", "")),
+        project_name=os.getenv("LANGCHAIN_PROJECT", "project-forge"),
+        endpoint=os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com"),
+    )
+    return diag
+
+
+def initialize_langsmith_client(diag: Optional[LangSmithDiagnostics] = None) -> LangSmithDiagnostics:
+    """Attempt to create a LangSmith client; never raises if configuration is missing."""
+
+    diag = diag or collect_langsmith_diagnostics()
+
+    if not diag.enabled_flag:
+        logger.debug("LangSmith tracing disabled via environment flag.")
+        return diag
+
+    if not diag.api_key_present:
+        diag.error_message = "LANGCHAIN_API_KEY not set"
+        logger.warning("LangSmith tracing enabled but no API key found.")
+        return diag
+
+    try:
+        from langsmith import Client
+    except ImportError:
+        diag.error_message = "langsmith package not installed"
+        logger.warning("Install the 'langsmith' package to enable tracing.")
+        return diag
+
+    try:
+        Client(
+            api_key=os.getenv("LANGCHAIN_API_KEY"),
+            api_url=diag.endpoint,
+            project=diag.project_name,
         )
-        return False
+        diag.client_ready = True
+        diag.error_message = None
+        logger.info("LangSmith client initialized successfully.")
+    except Exception as exc:  # pragma: no cover - defensive logging
+        diag.error_message = str(exc)
+        logger.error("LangSmith client initialization failed: %s", exc)
 
-    project_name = os.getenv("LANGCHAIN_PROJECT", "project-forge")
-    endpoint = os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
+    return diag
 
-    logger.info(f"LangSmith tracing enabled for project: {project_name}")
-    logger.debug(f"LangSmith endpoint: {endpoint}")
 
-    return True
+def setup_langsmith_tracing() -> bool:
+    """Set up LangSmith tracing if configured via environment variables."""
+
+    diag = initialize_langsmith_client()
+    if diag.client_ready:
+        logger.info("LangSmith tracing enabled for project: %s", diag.project_name)
+        logger.debug("LangSmith endpoint: %s", diag.endpoint)
+        return True
+
+    logger.debug("LangSmith tracing unavailable (%s)", diag.status_label)
+    return False
 
 
 def setup_langfuse_tracing() -> bool:
@@ -172,8 +239,8 @@ def get_tracing_info() -> dict:
         if info["langsmith"]["enabled"]:
             print(f"LangSmith project: {info['langsmith']['project']}")
     """
-    langchain_enabled = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
-    langchain_api_key = bool(os.getenv("LANGCHAIN_API_KEY", ""))
+    langchain_diag = collect_langsmith_diagnostics()
+    langchain_diag = initialize_langsmith_client(langchain_diag) if langchain_diag.enabled_flag else langchain_diag
 
     langfuse_public_key = bool(os.getenv("LANGFUSE_PUBLIC_KEY", ""))
     langfuse_secret_key = bool(os.getenv("LANGFUSE_SECRET_KEY", ""))
@@ -186,20 +253,18 @@ def get_tracing_info() -> dict:
 
     return {
         "langsmith": {
-            "enabled": langchain_enabled,
-            "has_api_key": langchain_api_key,
-            "project": os.getenv("LANGCHAIN_PROJECT", "project-forge") if langchain_enabled else None,
-            "endpoint": os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com") if langchain_enabled else None
+            "enabled": langchain_diag.enabled_flag,
+            "has_api_key": langchain_diag.api_key_present,
+            "project": langchain_diag.project_name if langchain_diag.enabled_flag else None,
+            "endpoint": langchain_diag.endpoint if langchain_diag.enabled_flag else None,
+            "client_ready": langchain_diag.client_ready,
+            "status": langchain_diag.status_label,
+            "error": langchain_diag.error_message,
         },
         "langfuse": {
             "enabled": langfuse_public_key and langfuse_secret_key,
             "has_keys": langfuse_public_key and langfuse_secret_key,
             "host": os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com") if (langfuse_public_key and langfuse_secret_key) else None,
-            "package_installed": langfuse_installed
-        }
+            "package_installed": langfuse_installed,
+        },
     }
-
-
-# Auto-setup tracing when this module is imported
-# This ensures tracing is enabled as early as possible
-_tracing_status = setup_tracing()

@@ -1,16 +1,12 @@
-"""
-Utility functions for the Streamlit UI.
+"""Utility helpers shared across the Streamlit UI."""
 
-This module provides helper functions for session state management,
-data formatting, and common UI components.
-"""
-
-import streamlit as st
-from datetime import datetime
-from typing import Optional, Dict, Any, List
+import asyncio
 import io
 import sys
-from contextlib import redirect_stdout, redirect_stderr
+from datetime import datetime
+from typing import Optional, Dict, Any
+
+import streamlit as st
 
 
 def initialize_session_state():
@@ -68,6 +64,8 @@ def initialize_session_state():
         # Metadata
         "iterations": 0,
         "clarity_score": None,
+        "run_token": 0,
+        "last_run_token": 0,
 
         # Logs and debugging
         "execution_logs": [],
@@ -81,32 +79,58 @@ def initialize_session_state():
             st.session_state[key] = value
 
 
-def reset_execution_state():
-    """Reset the execution state for a new run."""
-    keys_to_reset = [
-        "execution_should_start", "execution_started", "execution_completed", "execution_error",
-        "start_time", "end_time", "current_agent", "progress_percent",
-        "ConceptExpander_completed", "GoalsAnalyzer_completed",
-        "FrameworkSelector_completed", "PhaseDesigner_completed",
-        "TeacherAgent_completed", "EvaluatorAgent_completed",
-        "PRDWriter_completed", "project_idea", "project_goals",
-        "framework_choice", "phases", "enriched_phases",
-        "evaluation_result", "readme_content", "project_name",
-        "planning_result", "full_plan_result", "final_result",
-        "iterations", "clarity_score", "execution_logs", "agent_logs",
-        "captured_stdout", "captured_stderr"
-    ]
+def reset_execution_state(full_reset: bool = False):
+    """Reset the execution state for a new run.
 
-    for key in keys_to_reset:
-        if key in ["execution_logs", "agent_logs"]:
-            st.session_state[key] = [] if key == "execution_logs" else {}
-        elif key in ["captured_stdout", "captured_stderr"]:
-            st.session_state[key] = ""
-        else:
-            st.session_state[key] = None if "_completed" not in key else False
+    Args:
+        full_reset: When True also clears user inputs; otherwise only clears runtime data.
+    """
 
-    st.session_state["progress_percent"] = 0
-    st.session_state["current_agent"] = "Not started"
+    runtime_defaults = {
+        "execution_should_start": False,
+        "execution_started": False,
+        "execution_completed": False,
+        "execution_error": None,
+        "start_time": None,
+        "end_time": None,
+        "current_agent": "Not started",
+        "progress_percent": 0,
+        "ConceptExpander_completed": False,
+        "GoalsAnalyzer_completed": False,
+        "FrameworkSelector_completed": False,
+        "PhaseDesigner_completed": False,
+        "TeacherAgent_completed": False,
+        "EvaluatorAgent_completed": False,
+        "PRDWriter_completed": False,
+        "project_idea": None,
+        "project_goals": None,
+        "framework_choice": None,
+        "phases": None,
+        "enriched_phases": None,
+        "evaluation_result": None,
+        "readme_content": None,
+        "project_name": None,
+        "planning_result": None,
+        "full_plan_result": None,
+        "final_result": None,
+        "iterations": 0,
+        "clarity_score": None,
+        "execution_logs": [],
+        "agent_logs": {},
+        "captured_stdout": "",
+        "captured_stderr": "",
+    }
+
+    for key, value in runtime_defaults.items():
+        st.session_state[key] = value
+
+    if full_reset:
+        st.session_state.raw_idea = ""
+        st.session_state.skill_level = "intermediate"
+        st.session_state.project_type = "general"
+        st.session_state.phase = 4
+        st.session_state.max_iterations = 2
+        st.session_state.verbose = True
 
 
 def add_log(message: str, level: str = "INFO"):
@@ -187,6 +211,36 @@ def get_elapsed_time() -> Optional[str]:
     if minutes > 0:
         return f"{minutes}m {seconds}s"
     return f"{seconds}s"
+
+
+def prepare_new_run_state():
+    """Clear prior execution artifacts while preserving user inputs."""
+
+    reset_execution_state(full_reset=False)
+    st.session_state.run_token = st.session_state.get("run_token", 0) + 1
+    st.session_state.execution_started = True
+    st.session_state.execution_completed = False
+    st.session_state.execution_error = None
+    st.session_state.start_time = datetime.now()
+    st.session_state.last_run_token = st.session_state.run_token
+
+
+def cleanup_asyncio_tasks() -> int:
+    """Cancel any pending asyncio tasks left over from CrewAI runs."""
+
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        return 0
+
+    cancelled = 0
+    for task in asyncio.all_tasks(loop):
+        if task.done() or task is asyncio.current_task(loop):
+            continue
+        task.cancel()
+        cancelled += 1
+
+    return cancelled
 
 
 def display_project_idea(idea):
@@ -343,6 +397,29 @@ def display_evaluation_result(evaluation):
         st.warning("**Suggestions:**")
         for suggestion in evaluation.suggestions:
             st.write(f"• {suggestion}")
+
+    if getattr(evaluation, "architecture_notes", None):
+        st.info("**Architecture Notes:**")
+        for note in evaluation.architecture_notes:
+            st.write(f"• {note}")
+
+    if getattr(evaluation, "performance_alerts", None):
+        st.warning("**Performance Alerts:**")
+        for alert in evaluation.performance_alerts:
+            st.write(f"• {alert}")
+
+    if getattr(evaluation, "resilience_risks", None):
+        st.error("**Resilience Risks:**")
+        for risk in evaluation.resilience_risks:
+            st.write(f"• {risk}")
+
+    if getattr(evaluation, "test_recommendations", None):
+        st.success("**Test Coverage Recommendations:**")
+        for rec in evaluation.test_recommendations:
+            st.write(f"• {rec}")
+
+    if getattr(evaluation, "naming_feedback", None):
+        st.caption(f"📝 Naming/Style: {evaluation.naming_feedback}")
 
 
 def display_readme_preview(readme_content: str, max_lines: int = 50):

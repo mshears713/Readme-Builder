@@ -24,6 +24,24 @@ services:
     networks:
       - project-forge-network
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: project-forge-api
+    environment:
+      - APP_MODE=api
+      - APP_PORT=8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./output:/app/output
+    command: ["/app/docker/entrypoint.sh"]
+    restart: unless-stopped
+    networks:
+      - project-forge-network
+
   # CLI Service (for batch processing)
   cli:
     build:

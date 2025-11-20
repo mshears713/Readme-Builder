@@ -1,51 +1,36 @@
-# Multi-stage Dockerfile for Project Forge
-# Optimized for Windows and Linux compatibility
+# syntax=docker/dockerfile:1.6
 
-# Stage 1: Base Python environment
-FROM python:3.11-slim as base
+ARG PYTHON_VERSION=3.11-slim-bullseye
 
-# Set environment variables
+FROM --platform=$BUILDPLATFORM python:${PYTHON_VERSION} AS builder
+ENV PIP_NO_CACHE_DIR=1
+WORKDIR /src
+
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt ./requirements.txt
+COPY project_forge/requirements.txt ./project_requirements.txt
+RUN python -m pip install --upgrade pip \
+    && python -m pip install --prefix=/install -r requirements.txt -r project_requirements.txt
+
+FROM python:${PYTHON_VERSION} AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    APP_MODE=streamlit \
+    APP_PORT=8501
 
-# Create app directory
+RUN apt-get update && apt-get install -y --no-install-recommends curl tini && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+COPY --from=builder /install /usr/local
+COPY . /app
 
-# Stage 2: Dependencies installation
-FROM base as dependencies
-
-# Copy requirements file
-COPY requirements.txt .
-
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Stage 3: Application
-FROM base as application
-
-# Copy installed dependencies from previous stage
-COPY --from=dependencies /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=dependencies /usr/local/bin /usr/local/bin
-
-# Copy application code
-COPY project_forge/ /app/project_forge/
-COPY streamlit_ui/ /app/streamlit_ui/
-COPY streamlit_app.py /app/
-COPY README.md /app/
-
-# Create output directory for generated READMEs
-RUN mkdir -p /app/output
-
-# Create a non-root user for security
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+RUN chmod +x /app/docker/entrypoint.sh /app/docker/healthcheck.sh
 
 USER appuser
+EXPOSE 8501 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD /bin/bash /app/docker/healthcheck.sh || exit 1
 
-# Expose Streamlit port
-EXPOSE 8501
-
-# Default command (can be overridden in docker-compose)
-CMD ["streamlit", "run", "streamlit_app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+ENTRYPOINT ["/bin/bash", "/app/docker/entrypoint.sh"]

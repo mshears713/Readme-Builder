@@ -5,7 +5,7 @@ Displays detailed information about the GoalsAnalyzer agent's execution.
 """
 
 import streamlit as st
-from streamlit_ui.utils import display_project_goals
+from streamlit_ui.utils import display_project_goals, display_project_idea
 
 
 def render():

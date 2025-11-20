@@ -5,8 +5,11 @@ Provides information about setting up and using tracing tools like LangSmith
 to debug and monitor the multi-agent pipeline.
 """
 
-import streamlit as st
 import os
+
+import streamlit as st
+
+from project_forge.src.utils.tracing_setup import get_tracing_info
 
 
 def render():
@@ -19,10 +22,8 @@ def render():
     # Check tracing configuration
     st.subheader("Current Configuration")
 
-    langchain_enabled = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
-    langchain_api_key = os.getenv("LANGCHAIN_API_KEY", "")
-    langchain_project = os.getenv("LANGCHAIN_PROJECT", "project-forge")
-
+    tracing_info = get_tracing_info()
+    langsmith_info = tracing_info["langsmith"]
     langfuse_public_key = os.getenv("LANGFUSE_PUBLIC_KEY", "")
     langfuse_secret_key = os.getenv("LANGFUSE_SECRET_KEY", "")
 
@@ -30,13 +31,22 @@ def render():
 
     with col1:
         st.write("**LangSmith Status:**")
-        if langchain_enabled and langchain_api_key:
-            st.success("✅ Enabled")
-            st.info(f"**Project:** {langchain_project}")
-        elif langchain_api_key:
-            st.warning("⚠️ API key set but tracing not enabled")
+        status = langsmith_info["status"]
+        if langsmith_info["client_ready"]:
+            st.success("✅ Ready")
+        elif status.startswith("error"):
+            st.error(f"❌ {status}")
+        elif status == "missing_api_key":
+            st.warning("⚠️ API key missing")
+        elif status == "disabled":
+            st.info("ℹ️ Disabled (set LANGCHAIN_TRACING_V2=true)")
         else:
-            st.error("❌ Not configured")
+            st.warning(f"⚠️ {status}")
+
+        if langsmith_info.get("project"):
+            st.info(f"**Project:** {langsmith_info['project']}")
+        if langsmith_info.get("error"):
+            st.caption(f"Last error: {langsmith_info['error']}")
 
     with col2:
         st.write("**LangFuse Status:**")
@@ -215,7 +225,7 @@ def render():
         | Slow execution | Total tokens, API calls | Reduce prompt size or iterations |
         """)
 
-        if langchain_enabled and langchain_api_key:
+        if langsmith_info["client_ready"]:
             st.success("""
             ✅ LangSmith is configured!
 
@@ -235,9 +245,9 @@ def render():
         **Traces not appearing?**
         1. Check environment variables are set correctly
         2. Restart the Streamlit application
-        3. Verify API key is valid
+        3. Verify API key is valid (use diagnostics above)
         4. Check network connectivity to tracing service
-
+        
         **"API key invalid" error?**
         1. Regenerate API key in dashboard
         2. Update `.env` file

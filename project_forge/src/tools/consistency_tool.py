@@ -8,7 +8,7 @@ dependencies are valid, etc. Catches structural errors before README generation.
 This is a stub implementation for Phase 1. Will be expanded in Phase 3.
 """
 
-from typing import List, Dict, Any
+from typing import List, Any
 from dataclasses import dataclass, field
 
 
